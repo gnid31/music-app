@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String?    @unique
+  password  String
+  playlists Playlist[]
+  favorites Song[]    @relation("FavoriteSongs")
+  playbackHistory PlaybackHistory[]
+  createdAt DateTime  @default(now())
+}
+
+model Artist {
+  id        Int     @id @default(autoincrement())
+  name      String
+  songs     Song[]
+  createdAt DateTime @default(now())
+}
+
+model Song {
+  id        Int     @id @default(autoincrement())
+  title     String
+  duration  Int     // thời lượng (giây)
+  url       String  // đường dẫn file nhạc
+  artistId  Int
+  artist    Artist  @relation(fields: [artistId], references: [id])
+  playlists PlaylistSong[]
+  playbackHistory PlaybackHistory[]
+  createdAt DateTime @default(now())
+  usersWhoFavorited User[] @relation("FavoriteSongs")
+}
+
+model Playlist {
+  id        Int            @id @default(autoincrement())
+  name      String
+  userId    Int
+  user      User           @relation(fields: [userId], references: [id])
+  songs     PlaylistSong[]
+  createdAt DateTime       @default(now())
+}
+
+model PlaylistSong {
+  playlistId Int
+  songId     Int
+  addedAt    DateTime @default(now())
+
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  song       Song     @relation(fields: [songId], references: [id])
+
+  @@id([playlistId, songId]) // khóa chính kép
+}
+
+model PlaybackHistory {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  songId    Int
+  playedAt  DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  song      Song      @relation(fields: [songId], references: [id])
+}
+
