@@ -37,7 +37,7 @@ const authenticateToken = async (
         res.status(403).json({ message: "Invalid or expired token" });
         return;
       }
-      // Xác minh thành công, lưu thông tin user vào request và chuyển tiếp
+      // Xác minh thành công, lưu thông tin user vào respone và chuyển tiếp
       res.locals.user = user;
       next();
     });

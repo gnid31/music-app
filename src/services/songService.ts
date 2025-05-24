@@ -8,7 +8,6 @@ const getSongByIdService = async (id: number): Promise<Song | null> => {
       where: { id },
       include: {
         artist: true,
-        playlists: true,
       },
     });
     return song;

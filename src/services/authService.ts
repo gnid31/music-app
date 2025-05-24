@@ -77,7 +77,7 @@ const loginUserService = async (
   }
 
   const token = jwt.sign(
-    { userId: user.id, identifier: user.username },
+    { id: user.id, username: user.username },
     JWT_SECRET,
     { expiresIn: "1h" }
   );
