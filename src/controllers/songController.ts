@@ -5,7 +5,7 @@ import {
 } from "../services/songService";
 import { StatusCodes } from "http-status-codes";
 
-const getSongController = async (
+const getSongByIdController = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -32,4 +32,4 @@ const getAllSongsController = async (
   }
 };
 
-export { getSongController, getAllSongsController };
+export { getSongByIdController, getAllSongsController };
