@@ -20,12 +20,14 @@ const findUserByUsername = async (username: string): Promise<User | null> => {
 };
 
 const createUser = async (
+  name: string,
   username: string,
   hashedPassword: string
 ): Promise<User | null> => {
   try {
     const user = await prisma.user.create({
       data: {
+        name: name,
         username: username,
         password: hashedPassword,
       },
@@ -39,6 +41,7 @@ const createUser = async (
 };
 
 const registerNewUser = async (
+  name: string,
   username: string,
   password: string
 ): Promise<User | null> => {
@@ -46,7 +49,7 @@ const registerNewUser = async (
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const newUser = await createUser(username, hashedPassword);
+    const newUser = await createUser(name, username, hashedPassword);
 
     console.log(`Service: Registered user ${username}`);
     return newUser;
@@ -76,11 +79,9 @@ const loginUserService = async (
     throw error;
   }
 
-  const token = jwt.sign(
-    { id: user.id, username: user.username },
-    JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
 
   return token;
 };

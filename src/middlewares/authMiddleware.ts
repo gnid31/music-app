@@ -11,7 +11,7 @@ const authenticateToken = async (
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  if (token == null) {
+  if (!token) {
     res.sendStatus(401); // Không có token
     return;
   }

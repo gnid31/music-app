@@ -2,9 +2,11 @@ import Joi from "joi";
 import { findUserByUsername } from "../services/authService";
 import { StatusCodes } from "http-status-codes";
 import { Request, Response, NextFunction } from "express";
+import { ICheckUsernameBody } from "../dto/auth.dto";
 // Định nghĩa schema (cấu trúc và ràng buộc) cho dữ liệu đầu vào khi đăng ký
 const registrationSchema = Joi.object({
   // Trường username: phải là chuỗi và là trường bắt buộc
+  name: Joi.string().required(),
   username: Joi.string().required(),
   // Trường password: phải là chuỗi và là trường bắt buộc
   password: Joi.string().required(),
@@ -34,9 +36,7 @@ const validateRegistrationInput = (
   next();
 };
 
-interface ICheckUsernameBody {
-  username: string;
-}
+
 
 // Middleware bất đồng bộ để kiểm tra xem người dùng với username đã cho có tồn tại trong cơ sở dữ liệu chưa
 const checkExistingUser = async (
