@@ -6,11 +6,7 @@ import {
 } from "../services/authService";
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "../middlewares/errorHandler";
-
-interface IAuthUserBody {
-  username: string;
-  password: string;
-}
+import { IAuthUserBody } from "../dto/auth.dto";
 
 const registerUser = async (
   req: Request<{}, {}, IAuthUserBody>,
@@ -18,10 +14,10 @@ const registerUser = async (
   next: NextFunction
 ) => {
   try {
-    const { username, password } = req.body;
+    const { name, username, password } = req.body;
 
     // Password hashing and user creation logic moved to authService
-    await registerNewUser(username, password);
+    await registerNewUser(name, username, password);
   } catch (error) {
     console.error("Register error:", error);
     next(error); // Pass error to middleware

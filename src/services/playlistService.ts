@@ -8,7 +8,6 @@ const createPlaylistService = async (
   userId: number
 ): Promise<Playlist> => {
   try {
-    
     const newPlaylist = await prisma.playlist.create({
       data: {
         name,
@@ -24,12 +23,13 @@ const createPlaylistService = async (
 
 const updatePlaylistNameService = async (
   playlistId: number,
-  newName: string
+  newName: string,
+  userId: any
 ): Promise<Playlist | null> => {
   try {
-    // Tìm playlist và kiểm tra xem người dùng có phải chủ sở hữu không
-    const playlistToUpdate = await prisma.playlist.findUnique({
-      where: { id: playlistId },
+    // Tìm playlist
+    const playlistToUpdate = await prisma.playlist.findFirst({
+      where: { id: playlistId, userId: userId },
     });
 
     if (!playlistToUpdate) {
@@ -48,4 +48,20 @@ const updatePlaylistNameService = async (
   }
 };
 
-export { createPlaylistService, updatePlaylistNameService };
+const deletePlaylistService = async (playlistId: number, userId: any): Promise<Playlist> => {
+  try {
+    const deletePlaylist = await prisma.playlist.delete({
+      where: { id: playlistId, userId: userId },
+    });
+    return deletePlaylist;
+  } catch (error) {
+    console.error("Error creating playlist:", error);
+    throw error;
+  }
+};
+
+export {
+  createPlaylistService,
+  updatePlaylistNameService,
+  deletePlaylistService,
+};

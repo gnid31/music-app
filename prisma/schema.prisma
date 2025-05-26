@@ -18,6 +18,7 @@ model User {
   username  String    @unique
   email     String?    @unique
   password  String
+  name      String
   playlists Playlist[]
   favorites Song[]    @relation("FavoriteSongs")
   playbackHistory PlaybackHistory[]

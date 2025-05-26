@@ -1,6 +1,6 @@
 import express from "express";
-import routes from './routes/index'
-import { errorHandler } from './middlewares/errorHandler'
+import routes from "./routes/index";
+import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
 const PORT = 3000;
@@ -9,7 +9,7 @@ const PORT = 3000;
 // để xử lý JSON body của request
 app.use(express.json());
 
-app.use('/', routes);
+app.use("/", routes);
 
 app.use(errorHandler);
 

@@ -11,9 +11,9 @@ router.post('/login', validateLoginInput, loginUser);
 router.post('/logout', authenticateToken, logoutUser);
 
 
-router.get('/profile', authenticateToken, (req, res) => {
-  // Nếu đến được đây nghĩa là token hợp lệ và không bị blacklist
-  res.status(200).json({ message: 'Welcome to your profile!', user: res.locals.user });
-});
+// router.get('/profile', authenticateToken, (req, res) => {
+//   // Nếu đến được đây nghĩa là token hợp lệ và không bị blacklist
+//   res.status(200).json({ message: 'Welcome to your profile!', user: res.locals.user });
+// });
 
 export default router;
