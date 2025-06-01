@@ -33,6 +33,8 @@ const authenticateToken = async (
       process.env.JWT_SECRET || "642be298-b982-4517-9d0d-bedd6acecdd4";
     jwt.verify(token, jwtSecret, (err, user) => {
       if (err) {
+        console.log(err);
+        
         // Lỗi xác minh (ví dụ: token hết hạn, chữ ký sai)
         res.status(403).json({ message: "Invalid or expired token" });
         return;

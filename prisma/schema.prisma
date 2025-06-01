@@ -28,6 +28,7 @@ model User {
 model Artist {
   id        Int     @id @default(autoincrement())
   name      String
+  nameNormalized String
   songs     Song[]
   createdAt DateTime @default(now())
 }
@@ -35,6 +36,7 @@ model Artist {
 model Song {
   id        Int     @id @default(autoincrement())
   title     String
+  titleNormalized String
   duration  Int     // thời lượng (giây)
   url       String  // đường dẫn file nhạc
   artistId  Int

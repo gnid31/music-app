@@ -48,7 +48,10 @@ const updatePlaylistNameService = async (
   }
 };
 
-const deletePlaylistService = async (playlistId: number, userId: any): Promise<Playlist> => {
+const deletePlaylistService = async (
+  playlistId: number,
+  userId: any
+): Promise<Playlist> => {
   try {
     const deletePlaylist = await prisma.playlist.delete({
       where: { id: playlistId, userId: userId },
@@ -60,8 +63,39 @@ const deletePlaylistService = async (playlistId: number, userId: any): Promise<P
   }
 };
 
+const addSongToPlaylistService = async (playlistId: number, songId: number) => {
+  // Check playlist and song existence
+  const [playlist, song] = await Promise.all([
+    prisma.playlist.findUnique({ where: { id: playlistId } }),
+    prisma.song.findUnique({ where: { id: songId } }),
+  ]);
+
+  if (!playlist) throw new Error("Playlist not found");
+  if (!song) throw new Error("Song not found");
+
+  // Avoid adding duplicate
+  const exists = await prisma.playlistSong.findUnique({
+    where: {
+      playlistId_songId: {
+        playlistId,
+        songId,
+      },
+    },
+  });
+
+  if (exists) throw new Error("Song already in playlist");
+
+  return await prisma.playlistSong.create({
+    data: {
+      playlistId,
+      songId,
+    },
+  });
+};
+
 export {
   createPlaylistService,
   updatePlaylistNameService,
   deletePlaylistService,
+  addSongToPlaylistService,
 };
