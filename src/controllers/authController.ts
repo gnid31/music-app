@@ -8,6 +8,55 @@ import { Request, Response, NextFunction } from "express";
 import { CustomError } from "../middlewares/errorHandler";
 import { IAuthUserBody } from "../dto/auth.dto";
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Đăng ký người dùng mới
+ *     description: Tạo tài khoản mới với tên, tên đăng nhập và mật khẩu.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - username
+ *               - password
+ *               - repeatpassword
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Nguyễn Văn A
+ *               username:
+ *                 type: string
+ *                 example: nguyenvana
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: matkhau123
+ *               repeatpassword:
+ *                 type: string
+ *                 format: password
+ *                 example: matkhau123
+ *     responses:
+ *       201:
+ *         description: Người dùng được đăng ký thành công.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: User registered successfully.
+ *       400:
+ *         description: Yêu cầu không hợp lệ.
+ *       409:
+ *         description: Tên đăng nhập đã tồn tại.
+ *       500:
+ *         description: Lỗi máy chủ nội bộ.
+ */
 const registerUser = async (
   req: Request<{}, {}, IAuthUserBody>,
   res: Response,
@@ -25,6 +74,50 @@ const registerUser = async (
 
   res.status(StatusCodes.CREATED).send("User registered successfully.");
 };
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Đăng nhập người dùng
+ *     description: Xác thực người dùng bằng tên đăng nhập và mật khẩu. Trả về JWT token nếu thành công.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: nguyenvana
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: matkhau123
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công, trả về token JWT.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *       400:
+ *         description: Dữ liệu không hợp lệ.
+ *       401:
+ *         description: Sai tên đăng nhập hoặc mật khẩu.
+ *       500:
+ *         description: Lỗi máy chủ nội bộ.
+ */
 
 // Controller function to handle user login requests
 const loginUser = async (

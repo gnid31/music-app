@@ -1,6 +1,7 @@
 // src/controllers/playlistController.ts
 import { Request, Response, NextFunction } from "express";
 import {
+  addSongToPlaylistService,
   createPlaylistService,
   deletePlaylistService,
   updatePlaylistNameService,
@@ -100,4 +101,28 @@ const deletePlaylistController = async (
   }
 };
 
-export { createPlaylistController, updatePlaylistNameController, deletePlaylistController };
+const addSongToPlaylistController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { playlistId } = req.params;
+  const { songId } = req.body;
+
+  try {
+    const added = await addSongToPlaylistService(
+      Number(playlistId),
+      Number(songId)
+    );
+    res.status(201).json({ message: "Song added to playlist", data: added });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export {
+  createPlaylistController,
+  updatePlaylistNameController,
+  deletePlaylistController,
+  addSongToPlaylistController,
+};
