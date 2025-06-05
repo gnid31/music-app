@@ -24,7 +24,7 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
 
   app:
-    image: gnid70136/gnid31/app:latest
+    image: gnid70136/gnid31:latest
     build:
       context: .
       dockerfile: Dockerfile
