@@ -1,8 +1,8 @@
 import { StatusCodes } from "http-status-codes"; // Import StatusCodes
 import {
-  registerNewUser,
   loginUserService,
   logoutUserService,
+  registerUserService,
 } from "../services/authService";
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "../middlewares/errorHandler";
@@ -57,7 +57,7 @@ import { IAuthUserBody } from "../dto/auth.dto";
  *       500:
  *         description: Lỗi máy chủ nội bộ.
  */
-const registerUser = async (
+const registerUserController = async (
   req: Request<{}, {}, IAuthUserBody>,
   res: Response,
   next: NextFunction
@@ -66,7 +66,7 @@ const registerUser = async (
     const { name, username, password } = req.body;
 
     // Password hashing and user creation logic moved to authService
-    await registerNewUser(name, username, password);
+    await registerUserService(name, username, password);
   } catch (error) {
     console.error("Register error:", error);
     next(error); // Pass error to middleware
@@ -95,11 +95,11 @@ const registerUser = async (
  *             properties:
  *               username:
  *                 type: string
- *                 example: nguyenvana
+ *                 example: test
  *               password:
  *                 type: string
  *                 format: password
- *                 example: matkhau123
+ *                 example: 123
  *     responses:
  *       200:
  *         description: Đăng nhập thành công, trả về token JWT.
@@ -120,7 +120,7 @@ const registerUser = async (
  */
 
 // Controller function to handle user login requests
-const loginUser = async (
+const loginUserController = async (
   req: Request<{}, {}, IAuthUserBody>,
   res: Response,
   next: NextFunction
@@ -139,7 +139,56 @@ const loginUser = async (
   }
 };
 
-const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Đăng xuất người dùng
+ *     description: Đăng xuất người dùng hiện tại bằng cách vô hiệu hóa JWT token hiện tại.
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - bearerAuth: []  # Yêu cầu xác thực bằng JWT Bearer Token
+ *     responses:
+ *       200:
+ *         description: Đăng xuất thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Đăng xuất thành công.
+ *       401:
+ *         description: Token không hợp lệ hoặc không được cung cấp.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No token provided
+ *       400:
+ *         description: Yêu cầu đăng xuất không hợp lệ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Token đã bị vô hiệu hóa.
+ *       500:
+ *         description: Lỗi máy chủ nội bộ khi xử lý đăng xuất.
+ */
+
+const logoutUserController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   // Hàm điều khiển (Controller) xử lý yêu cầu đăng xuất người dùng
   try {
     // Trích xuất tiêu đề (header) 'Authorization' từ yêu cầu
@@ -180,4 +229,4 @@ const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
 // router.post('/logout', logoutUser);
 
 // Export both controllers
-export { registerUser, loginUser, logoutUser };
+export { registerUserController, loginUserController, logoutUserController };

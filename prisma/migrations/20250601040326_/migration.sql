@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `artist` ADD COLUMN `nameNormalized` VARCHAR(191) NOT NULL;
+ALTER TABLE `Artist` ADD COLUMN `nameNormalized` VARCHAR(191) NOT NULL;
 
 -- AlterTable
-ALTER TABLE `song` ADD COLUMN `titleNormalized` VARCHAR(191) NOT NULL;
+ALTER TABLE `Song` ADD COLUMN `titleNormalized` VARCHAR(191) NOT NULL;

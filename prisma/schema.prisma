@@ -6,6 +6,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+
 }
 
 datasource db {
@@ -63,7 +65,7 @@ model PlaylistSong {
   songId     Int
   addedAt    DateTime @default(now())
 
-  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   song       Song     @relation(fields: [songId], references: [id])
 
   @@id([playlistId, songId]) // khóa chính kép
