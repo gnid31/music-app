@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: gnid70136/gnid31/app
+  DOCKER_IMAGE: gnid70136/gnid31
 
 jobs:
   build_and_push:
