@@ -34,13 +34,14 @@ const authenticateToken = async (
     jwt.verify(token, jwtSecret, (err, user) => {
       if (err) {
         console.log(err);
-        
+
         // Lỗi xác minh (ví dụ: token hết hạn, chữ ký sai)
         res.status(403).json({ message: "Invalid or expired token" });
         return;
       }
       // Xác minh thành công, lưu thông tin user vào respone và chuyển tiếp
       res.locals.user = user;
+      console.log("----------------------------------- meo meo");
       next();
     });
   } catch (err) {

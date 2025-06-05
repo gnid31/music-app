@@ -58,39 +58,105 @@ const deletePlaylistService = async (
     });
     return deletePlaylist;
   } catch (error) {
-    console.error("Error creating playlist:", error);
+    console.error("Error deleting playlist:", error);
     throw error;
   }
 };
 
-const addSongToPlaylistService = async (playlistId: number, songId: number) => {
-  // Check playlist and song existence
-  const [playlist, song] = await Promise.all([
-    prisma.playlist.findUnique({ where: { id: playlistId } }),
-    prisma.song.findUnique({ where: { id: songId } }),
-  ]);
+const addSongToPlaylistService = async (
+  playlistId: number,
+  songId: number,
+  userId: number
+) => {
+  try {
+    // Kiểm tra playlist có tồn tại và thuộc về user
+    const playlistToAdd = await prisma.playlist.findFirst({
+      where: { id: playlistId, userId: userId },
+    });
 
-  if (!playlist) throw new Error("Playlist not found");
-  if (!song) throw new Error("Song not found");
+    if (!playlistToAdd) {
+      // Không tìm thấy playlist hoặc không phải của user
+      throw new Error("Playlist not found or unauthorized");
+    }
 
-  // Avoid adding duplicate
-  const exists = await prisma.playlistSong.findUnique({
-    where: {
-      playlistId_songId: {
+    // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
+    const exists = await prisma.playlistSong.findUnique({
+      where: {
+        playlistId_songId: {
+          playlistId,
+          songId,
+        },
+      },
+    });
+
+    if (exists) {
+      throw new Error("Song already in playlist");
+    }
+
+    // Thêm bài hát vào playlist
+    const addedSong = await prisma.playlistSong.create({
+      data: {
         playlistId,
         songId,
       },
-    },
-  });
+    });
 
-  if (exists) throw new Error("Song already in playlist");
+    return addedSong;
+  } catch (error) {
+    // Log lỗi để debug
+    console.error("Error in addSongToPlaylistService:", error);
+    // Ném lỗi ra ngoài để controller hoặc middleware xử lý
+    throw error;
+  }
+};
 
-  return await prisma.playlistSong.create({
-    data: {
-      playlistId,
-      songId,
-    },
-  });
+const deleteSongToPlaylistService = async (
+  playlistId: number,
+  songId: number,
+  userId: any
+) => {
+  // Check playlist and song existence
+  try {
+    // Kiểm tra playlist có tồn tại và thuộc về user
+    const playlistToDelete = await prisma.playlist.findFirst({
+      where: { id: playlistId, userId: userId },
+    });
+
+    if (!playlistToDelete) {
+      // Không tìm thấy playlist hoặc không phải của user
+      throw new Error("Playlist not found or unauthorized");
+    }
+
+    // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
+    const exists = await prisma.playlistSong.findUnique({
+      where: {
+        playlistId_songId: {
+          playlistId,
+          songId,
+        },
+      },
+    });
+
+    if (!exists) {
+      throw new Error("Song doesn't exist in playlist");
+    }
+
+    // Xoá bài hát khỏi playlist
+    const deletedSong = await prisma.playlistSong.delete({
+      where: {
+        playlistId_songId: {
+          playlistId,
+          songId,
+        },
+      },
+    });
+    return deletedSong;
+  } catch (error) {
+    // Log lỗi để debug
+    console.error("Error in deleteSongToPlaylistService:", error);
+    // Ném lỗi ra ngoài để controller hoặc middleware xử lý
+    throw error;
+  }
 };
 
 export {
@@ -98,4 +164,5 @@ export {
   updatePlaylistNameService,
   deletePlaylistService,
   addSongToPlaylistService,
+  deleteSongToPlaylistService,
 };

@@ -1,4 +1,6 @@
 export interface PaginationParams {
+  userId?: number;
+  keyword?: string;
   page?: number;
   limit?: number;
   maxLimit?: number;

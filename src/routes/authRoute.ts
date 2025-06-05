@@ -1,14 +1,14 @@
 import express from "express";
-import { registerUser, loginUser, logoutUser } from "../controllers/authController";
+import { registerUserController, loginUserController, logoutUserController } from "../controllers/authController";
 import { validateRegistrationInput, checkExistingUser, validateLoginInput } from "../validations/authValidation";
-import authenticateToken from '../middlewares/authMiddleware';
+import authenticateToken from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
 // The path here is relative to where this router is used in server
-router.post('/register', validateRegistrationInput, checkExistingUser, registerUser);
-router.post('/login', validateLoginInput, loginUser);
-router.post('/logout', authenticateToken, logoutUser);
+router.post('/register', validateRegistrationInput, checkExistingUser, registerUserController);
+router.post('/login', validateLoginInput, loginUserController);
+router.post('/logout', authenticateToken, logoutUserController);
 
 
 // router.get('/profile', authenticateToken, (req, res) => {

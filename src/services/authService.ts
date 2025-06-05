@@ -40,7 +40,7 @@ const createUser = async (
   }
 };
 
-const registerNewUser = async (
+const registerUserService = async (
   name: string,
   username: string,
   password: string
@@ -113,5 +113,5 @@ export {
   findUserByUsername,
   loginUserService,
   logoutUserService,
-  registerNewUser,
+  registerUserService
 };
