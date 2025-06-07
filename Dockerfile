@@ -1,6 +1,7 @@
 # Sử dụng ảnh nền Node.js LTS
 FROM node:lts-alpine
-
+# Cài bash bằng apk (package manager của Alpine)
+RUN apk add --no-cache bash
 # Đặt thư mục làm việc bên trong container
 WORKDIR /app
 
