@@ -6,13 +6,9 @@ import swaggerSpec from './config/swagger';
 import cors from 'cors';
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 
 // Thêm middleware này VÀO ĐÂY, trước các route hoặc middleware khác
 // để xử lý JSON body của request
