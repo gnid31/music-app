@@ -42,9 +42,6 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          rm -rf ~/app
-          git clone https://github.com/gnid31/music-app.git ~/app
-          cd ~/app
           docker compose pull
           docker compose up -d --no-deps --force-recreate app
 
