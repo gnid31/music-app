@@ -8,7 +8,12 @@ import cors from 'cors';
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Thêm middleware này VÀO ĐÂY, trước các route hoặc middleware khác
 // để xử lý JSON body của request
 app.use(express.json());
