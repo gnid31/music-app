@@ -41,7 +41,6 @@ const authenticateToken = async (
       }
       // Xác minh thành công, lưu thông tin user vào respone và chuyển tiếp
       res.locals.user = user;
-      console.log("----------------------------------- meo meo");
       next();
     });
   } catch (err) {
