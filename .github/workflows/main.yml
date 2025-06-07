@@ -43,6 +43,9 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           cd ~/app
+          echo "👉 Ghi file .env"
+          echo "${{ secrets.ENV_CONTENT }}" > .env
+          echo "✅ File .env đã được tạo"
           docker compose pull
           docker compose up -d --no-deps --force-recreate app
 
