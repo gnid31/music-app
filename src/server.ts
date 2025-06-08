@@ -20,6 +20,7 @@ app.use("/", routes);
 // app.use("/api", routes);
 
 app.use(errorHandler);
+console.log("⚡ This is NEW image version");
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
