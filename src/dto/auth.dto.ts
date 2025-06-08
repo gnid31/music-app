@@ -9,7 +9,6 @@ interface ICheckUsernameBody {
 interface IProfile {
   name: string;
   id: number;
-  email: string | null;
 }
 
 export { IAuthUserBody, ICheckUsernameBody, IProfile };
