@@ -10,7 +10,6 @@ const getProfileService = async (id: number): Promise<IProfile | null> => {
       select: {
         name: true,
         id: true,
-        email: true,
       }
     });
     return profile;
