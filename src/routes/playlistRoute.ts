@@ -4,6 +4,8 @@ import {
   createPlaylistController,
   deletePlaylistController,
   deleteSongToPlaylistController,
+  getPlaylistsController,
+  getSongsPlaylistController,
   updatePlaylistNameController,
 } from "../controllers/playlistController";
 
@@ -16,5 +18,6 @@ router.delete("/:playlistId", deletePlaylistController);
 router.post("/:playlistId", addSongToPlaylistController);
 router.put("/:playlistId", updatePlaylistNameController);
 router.post("/", createPlaylistController);
-
+router.get("/:id", getPlaylistsController);
+router.get("/songs/:playlistId", getSongsPlaylistController);
 export default router;

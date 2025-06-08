@@ -1,4 +1,5 @@
 export interface PaginationParams {
+  playlistId?: number;
   userId?: number;
   keyword?: string;
   page?: number;

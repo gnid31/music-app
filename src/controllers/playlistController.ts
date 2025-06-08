@@ -5,9 +5,12 @@ import {
   createPlaylistService,
   deletePlaylistService,
   deleteSongToPlaylistService,
+  getPlaylistsService,
+  getSongsPlaylistService,
   updatePlaylistNameService,
 } from "../services/playlistService";
 import { StatusCodes } from "http-status-codes";
+import { parsePaginationParams } from "../utils/pagination";
 
 /**
  * @swagger
@@ -30,7 +33,7 @@ import { StatusCodes } from "http-status-codes";
  *             properties:
  *               name:
  *                 type: string
- *                 example: Nhạc chill buổi tối
+ *                 example: Playlist Test 1
  *     responses:
  *       201:
  *         description: Playlist được tạo thành công.
@@ -44,7 +47,7 @@ import { StatusCodes } from "http-status-codes";
  *                   example: 1
  *                 name:
  *                   type: string
- *                   example: Nhạc chill buổi tối
+ *                   example: Playlist Test 1
  *                 userId:
  *                   type: integer
  *                   example: 42
@@ -103,7 +106,7 @@ const createPlaylistController = async (
  *             properties:
  *               name:
  *                 type: string
- *                 example: Playlist buổi sáng
+ *                 example: Playlist Test 1 Modified
  *     responses:
  *       200:
  *         description: Cập nhật tên playlist thành công.
@@ -117,7 +120,7 @@ const createPlaylistController = async (
  *                   example: 1
  *                 name:
  *                   type: string
- *                   example: Playlist buổi sáng
+ *                   example: Playlist Test 1 Modified
  *                 userId:
  *                   type: integer
  *                   example: 42
@@ -207,7 +210,7 @@ const updatePlaylistNameController = async (
  *                   example: 1
  *                 name:
  *                   type: string
- *                   example: Playlist buổi sáng
+ *                   example: Playlist Test 1 Modified
  *                 userId:
  *                   type: integer
  *                   example: 42
@@ -229,7 +232,7 @@ const deletePlaylistController = async (
   try {
     const playlistId = parseInt(req.params.playlistId, 10); // Lấy ID từ URL params
     const userId = res.locals.user.id;
-    console.log("-------------------------------- meo meo", playlistId)
+    console.log("-------------------------------- meo meo", playlistId);
     if (isNaN(playlistId)) {
       res
         .status(StatusCodes.BAD_REQUEST)
@@ -329,7 +332,9 @@ const addSongToPlaylistController = async (
       Number(songId),
       userId
     );
-    res.status(StatusCodes.CREATED).json({ message: "Song added to playlist", data: added });
+    res
+      .status(StatusCodes.CREATED)
+      .json({ message: "Song added to playlist", data: added });
   } catch (error) {
     next(error);
   }
@@ -362,7 +367,7 @@ const addSongToPlaylistController = async (
  *             properties:
  *               songId:
  *                 type: integer
- *                 example: 123
+ *                 example: 42
  *     responses:
  *       201:
  *         description: Xóa bài hát khỏi playlist thành công
@@ -403,9 +408,126 @@ const deleteSongToPlaylistController = async (
       Number(songId),
       userId
     );
-    res.status(StatusCodes.CREATED).json({ message: "Song deleted to playlist", data: deleted });
+    res
+      .status(StatusCodes.CREATED)
+      .json({ message: "Song deleted to playlist", data: deleted });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/playlist/{id}:
+ *   get:
+ *     summary: Get all playlists of a user
+ *     tags:
+ *       - Playlist
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *         description: ID of the user
+ *     responses:
+ *       200:
+ *         description: List of playlists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: "Chill Playlist"
+ *       400:
+ *         description: Invalid user ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid user ID
+ *       401:
+ *         description: Unauthorized - token không hợp lệ hoặc không có token
+ *       403:
+ *         description: Forbidden (không phải chủ playlist)
+ *       500:
+ *         description: Internal server error
+ */
+
+const getPlaylistsController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    const authenticateUserId = res.locals.user.id;
+    if (isNaN(userId)) {
+      res.status(400).json({ message: "Invalid user ID" });
+      return;
+    }
+
+    if (userId !== authenticateUserId) {
+      res.status(403).json({ message: "Forbidden: Access denied" });
+      return;
+    }
+
+    const playlists = await getPlaylistsService(userId);
+
+    res.status(200).json({ data: playlists });
+  } catch (error) {
+    console.error("Error in getUserPlaylistsController:", error);
+    next(error);
+  }
+};
+
+const getSongsPlaylistController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { page, limit } = parsePaginationParams(req.query);
+    const playlistId = parseInt(req.params.playlistId as string, 10);
+    const userId = res.locals.user?.id;
+
+    if (isNaN(playlistId)) {
+      res.status(400).json({ message: "Invalid playlist ID" });
+      return;
+    }
+
+    
+    // Nếu có từ khóa, gọi service tìm kiếm (giới hạn mặc định 10 hoặc theo query param)
+    // Nếu không có từ khóa, gọi service lấy tất cả bài hát (có thể giới hạn theo query param)
+    const songs = await getSongsPlaylistService({
+      playlistId,
+      userId,
+      page,
+      limit,
+    });
+
+    // Trả về kết quả
+    res.status(StatusCodes.OK).json(songs);
+  } catch (error) {
+    console.error("Error in getSongsPlaylistController:", error);
+    // Chuyển lỗi xuống middleware xử lý lỗi nếu có
+    next(error);
+    // Hoặc trả về lỗi trực tiếp nếu không dùng middleware xử lý lỗi:
+    // res.status(500).json({ message: "Internal server error", error: (error as Error).message }ke);
   }
 };
 
@@ -414,5 +536,7 @@ export {
   updatePlaylistNameController,
   deletePlaylistController,
   addSongToPlaylistController,
-  deleteSongToPlaylistController
+  deleteSongToPlaylistController,
+  getPlaylistsController,
+  getSongsPlaylistController,
 };
