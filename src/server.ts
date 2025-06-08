@@ -7,7 +7,7 @@ import cors from 'cors';
 
 const app = express();
 
-const PORT = 3000;
+const PORT = 8080;
 
 
 app.use(cors());
@@ -16,14 +16,14 @@ app.use(cors());
 // để xử lý JSON body của request
 app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use("/", routes);
-// app.use("/api", routes);
+// app.use("/", routes);
+app.use("/api", routes);
 
 app.use(errorHandler);
 
-// app.listen(PORT, '0.0.0.0');
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
-});
+app.listen(PORT, '0.0.0.0');
+// app.listen(PORT, () => {
+//   console.log(`Server is running at http://localhost:${PORT}`);
+// });
 
 export default app;
