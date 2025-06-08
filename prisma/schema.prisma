@@ -16,11 +16,11 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id        Int       @id @default(autoincrement()) 
   username  String    @unique
-  email     String?    @unique
   password  String
   name      String
+  avatarUrl String?   // ảnh đại diện (tùy chọn)
   playlists Playlist[]
   favorites Song[]    @relation("FavoriteSongs")
   playbackHistory PlaybackHistory[]
@@ -31,6 +31,7 @@ model Artist {
   id        Int     @id @default(autoincrement())
   name      String
   nameNormalized String
+  imageUrl  String?  // ảnh nghệ sĩ (tùy chọn)
   songs     Song[]
   createdAt DateTime @default(now())
 }
@@ -41,6 +42,7 @@ model Song {
   titleNormalized String
   duration  Int     // thời lượng (giây)
   url       String  // đường dẫn file nhạc
+  imageUrl  String? // ảnh bài hát (tùy chọn)
   artistId  Int
   artist    Artist  @relation(fields: [artistId], references: [id])
   playlists PlaylistSong[]

@@ -30,18 +30,18 @@ import { IAuthUserBody } from "../dto/auth.dto";
  *             properties:
  *               name:
  *                 type: string
- *                 example: Nguyễn Văn A
+ *                 example: User 1
  *               username:
  *                 type: string
- *                 example: nguyenvana
+ *                 example: test1
  *               password:
  *                 type: string
  *                 format: password
- *                 example: matkhau123
+ *                 example: 123
  *               repeatpassword:
  *                 type: string
  *                 format: password
- *                 example: matkhau123
+ *                 example: 123
  *     responses:
  *       201:
  *         description: Người dùng được đăng ký thành công.
@@ -95,7 +95,7 @@ const registerUserController = async (
  *             properties:
  *               username:
  *                 type: string
- *                 example: test
+ *                 example: test1
  *               password:
  *                 type: string
  *                 format: password

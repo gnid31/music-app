@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: gnid70136/gnid31:latest
-    container_name: app
+    container_name: backend
     restart: always
     ports:
       - "8081:8080"

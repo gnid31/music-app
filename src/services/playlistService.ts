@@ -1,5 +1,6 @@
 // src/services/playlistService.ts
 import { PrismaClient, Playlist } from "@prisma/client";
+import { getPagination, PaginationParams } from "../utils/pagination";
 
 const prisma = new PrismaClient();
 
@@ -159,10 +160,73 @@ const deleteSongToPlaylistService = async (
   }
 };
 
+const getPlaylistsService = async (userId: number) => {
+  try {
+    return await prisma.playlist.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getPlaylistsService:", error);
+    throw error;
+  }
+};
+
+const getSongsPlaylistService = async ({
+  playlistId,
+  userId,
+  page,
+  limit,
+}: PaginationParams) => {
+  const playlist = await prisma.playlist.findFirst({
+    where: {
+      id: playlistId,
+      userId,
+    },
+  });
+
+  if (!playlist) {
+    throw new Error("Playlist not found or unauthorized");
+  }
+
+  const { skip, take, currentPage } = getPagination({ page, limit });
+
+  const [data, total] = await Promise.all([
+    prisma.playlistSong.findMany({
+      where: { playlistId },
+      orderBy: { addedAt: "desc" },
+      skip,
+      take,
+      include: {
+        song: {
+          include: {
+            artist: true,
+          },
+        },
+      },
+    }),
+    prisma.playlistSong.count({ where: { playlistId } }),
+  ]);
+
+  return {
+    data,
+    total,
+    currentPage,
+    totalPages: Math.ceil(total / take),
+    limit: take,
+  };
+};
+
 export {
   createPlaylistService,
   updatePlaylistNameService,
   deletePlaylistService,
   addSongToPlaylistService,
   deleteSongToPlaylistService,
+  getPlaylistsService,
+  getSongsPlaylistService,
 };
