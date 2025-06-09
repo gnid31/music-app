@@ -12,7 +12,7 @@ const swaggerDefinition = {
   servers: [
     {
       // url:, // Base path cho các endpoint API của bạn (ví dụ: http://localhost:3000/api)
-      url: 'http://13.250.41.251:8081',
+      url: 'http://3.1.202.198:8081',
       description: 'Development server',
     },
      // Thêm các server khác nếu có (staging, production...)
