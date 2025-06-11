@@ -110,7 +110,7 @@ const registerUserController = async (
  *               properties:
  *                 token:
  *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJ0ZXN0MiIsImlhdCI6MTc0OTUyMjI1MCwiZXhwIjoxNzQ5NTI1ODUwfQ.KPj-4O7EkgRLFcRuaI0ubnxSa9U_eaIHsvvNjU9XqbQ
  *       400:
  *         description: Dữ liệu không hợp lệ.
  *       401:
@@ -144,7 +144,7 @@ const loginUserController = async (
  * /api/auth/logout:
  *   post:
  *     summary: Đăng xuất người dùng
- *     description: Đăng xuất người dùng hiện tại bằng cách vô hiệu hóa JWT token hiện tại.
+ *     description: Đăng xuất người dùng hiện tại bằng cách vô hiệu hóa JWT token hiện tại bằng cách đưa vào danh sách đen (blacklist).
  *     tags:
  *       - Authentication
  *     security:
@@ -159,7 +159,7 @@ const loginUserController = async (
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Đăng xuất thành công.
+ *                   example: Logout successful
  *       401:
  *         description: Token không hợp lệ hoặc không được cung cấp.
  *         content:
@@ -171,7 +171,7 @@ const loginUserController = async (
  *                   type: string
  *                   example: No token provided
  *       400:
- *         description: Yêu cầu đăng xuất không hợp lệ.
+ *         description: Yêu cầu không hợp lệ, ví dụ như token đã bị vô hiệu hóa trước đó hoặc các lỗi liên quan đến xử lý business logic.
  *         content:
  *           application/json:
  *             schema:
@@ -182,7 +182,16 @@ const loginUserController = async (
  *                   example: Token đã bị vô hiệu hóa.
  *       500:
  *         description: Lỗi máy chủ nội bộ khi xử lý đăng xuất.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
  */
+
 
 const logoutUserController = async (
   req: Request,

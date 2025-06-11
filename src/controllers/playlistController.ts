@@ -1,4 +1,3 @@
-// src/controllers/playlistController.ts
 import { Request, Response, NextFunction } from "express";
 import {
   addSongToPlaylistService,
@@ -51,12 +50,40 @@ import { parsePaginationParams } from "../utils/pagination";
  *                 userId:
  *                   type: integer
  *                   example: 42
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-06-10T15:23:01.123Z"
  *       400:
- *         description: Dữ liệu không hợp lệ.
+ *         description: Dữ liệu đầu vào không hợp lệ, chẳng hạn thiếu tên playlist hoặc sai kiểu dữ liệu.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Playlist name is required
  *       401:
- *         description: Không được xác thực.
+ *         description: Người dùng chưa được xác thực hoặc token không hợp lệ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
  *       500:
  *         description: Lỗi máy chủ khi tạo playlist.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
  */
 
 const createPlaylistController = async (
@@ -68,6 +95,12 @@ const createPlaylistController = async (
     const { name } = req.body;
     // Giả định middleware xác thực đã chạy và gán user vào res.locals
     const userId = res.locals.user.id; // Lấy userId từ thông tin người dùng đã xác thực
+    if (!name || typeof name !== "string") {
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Playlist name is required" });
+      return;
+    }
 
     const newPlaylist = await createPlaylistService(name, userId);
     res.status(StatusCodes.CREATED).json(newPlaylist);
@@ -82,7 +115,7 @@ const createPlaylistController = async (
  * /api/playlist/{playlistId}:
  *   put:
  *     summary: Cập nhật tên playlist
- *     description: Cập nhật tên playlist của người dùng hiện tại theo ID.
+ *     description: Cập nhật tên playlist của người dùng hiện tại theo ID. Chỉ chủ sở hữu của playlist mới được phép cập nhật.
  *     tags:
  *       - Playlist
  *     security:
@@ -106,7 +139,7 @@ const createPlaylistController = async (
  *             properties:
  *               name:
  *                 type: string
- *                 example: Playlist Test 1 Modified
+ *                 example: Playlist Chill Cuối Tuần - Update
  *     responses:
  *       200:
  *         description: Cập nhật tên playlist thành công.
@@ -120,18 +153,54 @@ const createPlaylistController = async (
  *                   example: 1
  *                 name:
  *                   type: string
- *                   example: Playlist Test 1 Modified
+ *                   example: Playlist Chill Cuối Tuần - Update
  *                 userId:
  *                   type: integer
  *                   example: 42
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-06-10T15:23:01.123Z"
  *       400:
- *         description: Dữ liệu không hợp lệ.
+ *         description: Yêu cầu không hợp lệ – thiếu tên mới hoặc ID playlist không hợp lệ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid playlist ID
  *       401:
- *         description: Không được xác thực.
+ *         description: Người dùng chưa được xác thực.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
  *       404:
  *         description: Playlist không tồn tại hoặc không thuộc về người dùng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Playlist not found
  *       500:
- *         description: Lỗi máy chủ.
+ *         description: Lỗi máy chủ nội bộ khi cập nhật playlist.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
  */
 
 const updatePlaylistNameController = async (
@@ -214,14 +283,50 @@ const updatePlaylistNameController = async (
  *                 userId:
  *                   type: integer
  *                   example: 42
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-06-10T15:23:01.123Z"
  *       400:
- *         description: ID playlist không hợp lệ.
+ *         description: ID playlist không hợp lệ (không phải số nguyên hợp lệ).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid playlist ID
  *       401:
- *         description: Không được xác thực.
+ *         description: Không được xác thực hoặc thiếu token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
  *       404:
- *         description: Playlist không tồn tại hoặc không thuộc về người dùng.
+ *         description: Playlist không tồn tại hoặc không thuộc quyền sở hữu của người dùng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Playlist not found
  *       500:
- *         description: Lỗi máy chủ nội bộ.
+ *         description: Lỗi máy chủ nội bộ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
  */
 
 const deletePlaylistController = async (
@@ -232,7 +337,6 @@ const deletePlaylistController = async (
   try {
     const playlistId = parseInt(req.params.playlistId, 10); // Lấy ID từ URL params
     const userId = res.locals.user.id;
-    console.log("-------------------------------- meo meo", playlistId);
     if (isNaN(playlistId)) {
       res
         .status(StatusCodes.BAD_REQUEST)
@@ -251,7 +355,7 @@ const deletePlaylistController = async (
     res.status(StatusCodes.OK).json(deletePlaylist);
   } catch (error) {
     // Sử dụng 'any' tạm thời hoặc định nghĩa kiểu lỗi cụ thể
-    console.error("Error in updatePlaylistNameController:", error);
+    console.error("Error in deletePlaylistController:", error);
     next(error); // Chuyển lỗi khác đến middleware xử lý lỗi tập trung
   }
 };
@@ -263,6 +367,7 @@ const deletePlaylistController = async (
  *     summary: Thêm bài hát vào playlist
  *     description: |
  *       Thêm một bài hát cụ thể vào playlist dựa trên ID playlist và ID bài hát.
+ *       Chỉ cho phép nếu playlist thuộc quyền sở hữu của người dùng hiện tại.
  *     tags:
  *       - Playlist
  *     security:
@@ -308,14 +413,50 @@ const deletePlaylistController = async (
  *                     songId:
  *                       type: integer
  *                       example: 42
+ *                     addedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-06-10T15:50:12.000Z"
  *       400:
- *         description: Dữ liệu không hợp lệ.
+ *         description: Dữ liệu không hợp lệ hoặc bài hát đã tồn tại trong playlist.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Song already in playlist
  *       401:
  *         description: Không được xác thực.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
  *       404:
- *         description: Playlist hoặc bài hát không tồn tại.
+ *         description: Playlist không tồn tại hoặc không thuộc về người dùng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Playlist not found or unauthorized
  *       500:
  *         description: Lỗi máy chủ nội bộ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
  */
 
 const addSongToPlaylistController = async (
@@ -339,6 +480,7 @@ const addSongToPlaylistController = async (
     next(error);
   }
 };
+
 /**
  * @swagger
  * /api/playlist/delete/{playlistId}:
@@ -369,7 +511,7 @@ const addSongToPlaylistController = async (
  *                 type: integer
  *                 example: 42
  *     responses:
- *       201:
+ *       200:
  *         description: Xóa bài hát khỏi playlist thành công
  *         content:
  *           application/json:
@@ -378,20 +520,30 @@ const addSongToPlaylistController = async (
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Song deleted to playlist
+ *                   example: Song deleted from playlist
  *                 data:
  *                   type: object
- *                   description: Dữ liệu bài hát đã xóa (nếu có)
+ *                   properties:
+ *                     playlistId:
+ *                       type: integer
+ *                       example: 4
+ *                     songId:
+ *                       type: integer
+ *                       example: 11
+ *                     addedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-06-10T03:13:59.499Z"
  *       400:
- *         description: Yêu cầu không hợp lệ
+ *         description: Dữ liệu không hợp lệ
  *       401:
- *         description: Unauthorized - token không hợp lệ hoặc không có token
+ *         description: Không được xác thực
  *       403:
- *         description: Không được phép thao tác (không phải chủ playlist)
+ *         description: Không có quyền thao tác
  *       404:
  *         description: Không tìm thấy playlist hoặc bài hát trong playlist
  *       500:
- *         description: Lỗi máy chủ
+ *         description: Lỗi máy chủ nội bộ
  */
 
 const deleteSongToPlaylistController = async (
@@ -409,8 +561,8 @@ const deleteSongToPlaylistController = async (
       userId
     );
     res
-      .status(StatusCodes.CREATED)
-      .json({ message: "Song deleted to playlist", data: deleted });
+      .status(StatusCodes.OK)
+      .json({ message: "Song deleted from playlist", data: deleted });
   } catch (error) {
     next(error);
   }
@@ -420,9 +572,14 @@ const deleteSongToPlaylistController = async (
  * @swagger
  * /api/playlist/{id}:
  *   get:
- *     summary: Get all playlists of a user
+ *     summary: Lấy danh sách playlist của người dùng
+ *     description: |
+ *       Trả về tất cả playlist thuộc về một người dùng xác thực.
+ *       Chỉ cho phép truy cập nếu `id` khớp với người dùng hiện tại.
  *     tags:
  *       - Playlist
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -430,10 +587,10 @@ const deleteSongToPlaylistController = async (
  *         schema:
  *           type: integer
  *           example: 1
- *         description: ID of the user
+ *         description: ID của người dùng
  *     responses:
  *       200:
- *         description: List of playlists
+ *         description: Danh sách playlist của người dùng
  *         content:
  *           application/json:
  *             schema:
@@ -446,12 +603,12 @@ const deleteSongToPlaylistController = async (
  *                     properties:
  *                       id:
  *                         type: integer
- *                         example: 1
+ *                         example: 4
  *                       name:
  *                         type: string
- *                         example: "Chill Playlist"
+ *                         example: "meo meo"
  *       400:
- *         description: Invalid user ID
+ *         description: ID người dùng không hợp lệ
  *         content:
  *           application/json:
  *             schema:
@@ -461,11 +618,11 @@ const deleteSongToPlaylistController = async (
  *                   type: string
  *                   example: Invalid user ID
  *       401:
- *         description: Unauthorized - token không hợp lệ hoặc không có token
+ *         description: Không được xác thực
  *       403:
- *         description: Forbidden (không phải chủ playlist)
+ *         description: Không có quyền truy cập (user ID không khớp)
  *       500:
- *         description: Internal server error
+ *         description: Lỗi máy chủ nội bộ
  */
 
 const getPlaylistsController = async (
@@ -495,6 +652,121 @@ const getPlaylistsController = async (
   }
 };
 
+/**
+ * @swagger
+ * /api/playlist/songs/{playlistId}:
+ *   get:
+ *     summary: Lấy danh sách bài hát của playlist
+ *     tags:
+ *       - Playlist
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: playlistId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của playlist
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số lượng bài hát mỗi trang
+ *     responses:
+ *       200:
+ *         description: Danh sách bài hát trong playlist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       playlistId:
+ *                         type: integer
+ *                         example: 4
+ *                       songId:
+ *                         type: integer
+ *                         example: 13
+ *                       addedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-06-10T03:49:26.522Z"
+ *                       song:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 13
+ *                           title:
+ *                             type: string
+ *                             example: "Dự Báo Thời Tiết Hôm Nay Mưa"
+ *                           titleNormalized:
+ *                             type: string
+ *                             example: "du bao thoi tiet hom nay mua"
+ *                           duration:
+ *                             type: integer
+ *                             example: 240
+ *                           url:
+ *                             type: string
+ *                             format: uri
+ *                             example: "https://gnid31-bucket.s3.amazonaws.com/mp3/13_Dự báo thời tiết hôm nay mưa.mp3"
+ *                           imageUrl:
+ *                             type: string
+ *                             format: uri
+ *                             example: "https://example.com/images/songs/uocgi.jpg"
+ *                           artistId:
+ *                             type: integer
+ *                             example: 3
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2025-06-09T15:33:12.305Z"
+ *                           artist:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 3
+ *                               name:
+ *                                 type: string
+ *                                 example: "Grey D"
+ *                               nameNormalized:
+ *                                 type: string
+ *                                 example: "grey d"
+ *                               imageUrl:
+ *                                 type: string
+ *                                 format: uri
+ *                                 example: "https://example.com/images/artists/SonTungMTP.jpg"
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 example: "2025-06-09T15:30:04.396Z"
+ *                 total:
+ *                   type: integer
+ *                   example: 3
+ *                 currentPage:
+ *                   type: integer
+ *                   example: 1
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 10
+ */
+
 const getSongsPlaylistController = async (
   req: Request,
   res: Response,
@@ -510,9 +782,6 @@ const getSongsPlaylistController = async (
       return;
     }
 
-    
-    // Nếu có từ khóa, gọi service tìm kiếm (giới hạn mặc định 10 hoặc theo query param)
-    // Nếu không có từ khóa, gọi service lấy tất cả bài hát (có thể giới hạn theo query param)
     const songs = await getSongsPlaylistService({
       playlistId,
       userId,

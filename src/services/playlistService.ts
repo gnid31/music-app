@@ -51,13 +51,27 @@ const updatePlaylistNameService = async (
 
 const deletePlaylistService = async (
   playlistId: number,
-  userId: any
-): Promise<Playlist> => {
+  userId: number
+): Promise<Playlist | null> => {
   try {
-    const deletePlaylist = await prisma.playlist.delete({
-      where: { id: playlistId, userId: userId },
+    // Tìm playlist có id và thuộc về userId
+    const playlist = await prisma.playlist.findFirst({
+      where: {
+        id: playlistId,
+        userId: userId,
+      },
     });
-    return deletePlaylist;
+
+    if (!playlist) {
+      return null;
+    }
+
+    // Xoá playlist dựa trên id
+    const deleted = await prisma.playlist.delete({
+      where: { id: playlistId },
+    });
+
+    return deleted;
   } catch (error) {
     console.error("Error deleting playlist:", error);
     throw error;
