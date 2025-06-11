@@ -19,53 +19,6 @@ const getSongByIdService = async (id: any): Promise<Song | null> => {
   }
 };
 
-// const getSongsService = async ({
-//   keyword,
-// }: {
-//   keyword?: string;
-// }): Promise<Song[]> => {
-//   try {
-//     const normalized = keyword
-//       ? removeVietnameseTones(keyword.trim())
-//       : undefined;
-
-//     const whereCondition = normalized
-//       ? {
-//           OR: [
-//             {
-//               titleNormalized: {
-//                 contains: normalized,
-//               },
-//             },
-//             {
-//               artist: {
-//                 is: {
-//                   nameNormalized: {
-//                     contains: normalized,
-//                   },
-//                 },
-//               },
-//             },
-//           ],
-//         }
-//       : undefined;
-
-//     const songs = await prisma.song.findMany({
-//       where: whereCondition,
-//       include: {
-//         artist: true,
-//         playlists: true,
-//       },
-//       take: normalized ? 10 : undefined, // Giới hạn nếu có keyword, không thì lấy hết
-//     });
-
-//     return songs;
-//   } catch (error) {
-//     console.error("Error in searchSongsService:", error);
-//     throw error;
-//   }
-// };
-
 const getSongsService = async ({ keyword, page, limit }: PaginationParams) => {
   const { skip, take, currentPage } = getPagination({ page, limit });
 
@@ -117,7 +70,7 @@ const addFavoriteSongService = async (userId: number, songId: number) => {
     include: { favorites: true },
   });
 
-  if (user?.favorites.some((fav: {id: number}) => fav.id === songId)) {
+  if (user?.favorites.some((fav: { id: number }) => fav.id === songId)) {
     throw new Error("Song already in favorites");
   }
 
@@ -162,24 +115,6 @@ const deleteFavoriteSongService = async (userId: number, songId: number) => {
 
   return { message: "Removed from favorites", songId };
 };
-
-// const getFavoriteSongsService = async (userId: ) => {
-//   const favoriteSongs = await prisma.user.findUnique({
-//     where: { id: userId },
-//     select: {
-//       favorites: {
-//         include: {
-//           artist: true,
-//         },
-//         orderBy: {
-//           createdAt: "desc", // hoặc 'title' nếu muốn sắp theo tên
-//         },
-//       },
-//     },
-//   });
-
-//   return favoriteSongs?.favorites || [];
-// };
 
 const getFavoriteSongsService = async ({
   userId,
@@ -271,6 +206,13 @@ const playSongService = async (userId: number, songId: number) => {
     throw new Error("Song not found");
   }
 
+  // Xoá bản ghi lịch sử cũ (nếu có)
+  await prisma.playbackHistory.deleteMany({
+    where: {
+      userId,
+      songId,
+    },
+  });
   // Ghi lại lịch sử phát nhạc
   await prisma.playbackHistory.create({
     data: {
@@ -279,7 +221,7 @@ const playSongService = async (userId: number, songId: number) => {
     },
   });
 
-  return song; // chỉ chứa id và url
+  return song;
 };
 
 export {
@@ -289,5 +231,5 @@ export {
   deleteFavoriteSongService,
   getFavoriteSongsService,
   getPlaybackHistoryService,
-  playSongService
+  playSongService,
 };
