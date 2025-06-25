@@ -232,7 +232,7 @@ const addFavoriteSongController = async (
 
   try {
     const result = await addFavoriteSongService(userId, Number(songId));
-    res.status(200).json(result);
+    res.status(StatusCodes.OK).json(result);
   } catch (error) {
     next(error);
   }
@@ -299,7 +299,7 @@ const deleteFavoriteSongController = async (
     const userId = res.locals.user.id;
     const { songId } = req.body;
     const result = await deleteFavoriteSongService(userId, Number(songId));
-    res.status(200).json(result);
+    res.status(StatusCodes.OK).json(result);
   } catch (err) {
     next(err);
   }
@@ -487,7 +487,7 @@ const getPlaybackHistoryController = async (
 
     const history = await getPlaybackHistoryService({ userId, page, limit });
 
-    res.status(200).json(history);
+    res.status(StatusCodes.OK).json(history);
   } catch (error) {
     next(error);
   }

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken"; // Import jwt đầy đủ
 import redisClient from "../config/redisClient"; // Import client Redis đã kết nối đúng cách
 import { NextFunction, Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
 
 const authenticateToken = async (
   req: Request,
@@ -12,7 +13,7 @@ const authenticateToken = async (
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    res.sendStatus(401); // Không có token
+    res.sendStatus(StatusCodes.UNAUTHORIZED); // Không có token
     return;
   }
 
@@ -24,7 +25,7 @@ const authenticateToken = async (
     if (reply) {
       // Nếu token tồn tại trong Redis (blacklist)
       console.log(`Blacklisted token access attempt: ${token}`);
-      res.status(401).json({ message: "Token has been revoked" }); // Trả về lỗi 401 hoặc 403
+      res.status(StatusCodes.UNAUTHORIZED).json({ message: "Token has been revoked" }); // Trả về lỗi 401 hoặc 403
       return;
     }
 
@@ -36,7 +37,7 @@ const authenticateToken = async (
         console.log(err);
 
         // Lỗi xác minh (ví dụ: token hết hạn, chữ ký sai)
-        res.status(403).json({ message: "Invalid or expired token" });
+        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Invalid or expired token" });
         return;
       }
       // Xác minh thành công, lưu thông tin user vào respone và chuyển tiếp
@@ -46,7 +47,7 @@ const authenticateToken = async (
   } catch (err) {
     console.error("Redis check error or JWT verification error:", err);
     // Xử lý lỗi, có thể trả về 500
-    res.sendStatus(500);
+    res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
     return;
   }
 };

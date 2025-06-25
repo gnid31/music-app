@@ -1,0 +1,124 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const mysql = require('mysql2/promise');
+const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+
+const s3 = new S3Client({});
+
+function streamToBuffer(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+}
+
+exports.handler = async (event) => {
+  console.log('Received S3 event:', JSON.stringify(event, null, 2));
+
+  const bucket = process.env.S3_BUCKET;
+  const uploadPrefix = process.env.UPLOAD_PREFIX || 'uploads/';
+  const mp3Prefix = process.env.MP3_PREFIX || 'mp3/';
+  const imagePrefix = process.env.IMAGE_PREFIX || 'imageSong/';
+  const hlsPrefix = process.env.HLS_PREFIX || 'hls/';
+
+  const record = event.Records[0];
+  // s3ObjectKey ban đầu đã được encode bởi S3, ví dụ: "mp3/Chuy%E1%BB%87n+%C4%90%C3%B4i+Ta.mp3"
+  const s3ObjectKey = record.s3.object.key; // GIỮ NGUYÊN key đã được encode từ S3 event
+  const fileName = path.basename(decodeURIComponent(s3ObjectKey)); // Giải mã để xử lý tên file nội bộ
+  const fileExt = path.extname(fileName).toLowerCase();
+  const baseName = path.parse(fileName).name;
+  const songId = baseName.split('_')[0]; // Assuming name format: "1234_name.mp3"
+
+  // Tạo Object URL bằng cách sử dụng s3ObjectKey THÔ (đã encode từ S3 event)
+  const objectUrlToSave = `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3ObjectKey}`;
+  console.log('Object URL to save:', objectUrlToSave);
+
+  const connection = await mysql.createConnection({
+    host: process.env.MYSQL_HOST,
+    port: Number(process.env.MYSQL_PORT || 3307),
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE
+  });
+
+  try {
+    // Event 1: uploads/ and .mp3 => convert to HLS
+    if (s3ObjectKey.startsWith(uploadPrefix) && fileExt === '.mp3') {
+      console.log('➡️ Event: Uploads MP3 → Convert to HLS');
+
+      const getCommand = new GetObjectCommand({ Bucket: bucket, Key: s3ObjectKey });
+      const mp3Object = await s3.send(getCommand);
+      const mp3Buffer = await streamToBuffer(mp3Object.Body);
+
+      // Sử dụng fileName đã giải mã để tạo đường dẫn tạm thời
+      const localInputPath = `/tmp/${fileName}`;
+      const outputDir = `/tmp/hls-${songId}`;
+      const localM3u8Path = `${outputDir}/playlist.m3u8`;
+      const ffmpegPath = '/opt/bin/ffmpeg';
+
+      fs.writeFileSync(localInputPath, mp3Buffer);
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      const ffmpegCommand = `${ffmpegPath} -i "${localInputPath}" -c:a aac -b:a 128k -ac 2 -start_number 0 -hls_time 10 -hls_list_size 0 -f hls "${localM3u8Path}"`;
+      console.log('Running command:', ffmpegCommand);
+      execSync(ffmpegCommand, { stdio: 'inherit' });
+
+      const files = fs.readdirSync(outputDir);
+      for (const file of files) {
+        const content = fs.readFileSync(`${outputDir}/${file}`);
+        // Tạo s3Key cho các file HLS.
+        // Cần đảm bảo tên file (ví dụ: playlist.m3u8, segment0.ts) không có ký tự đặc biệt cần encode thêm
+        const s3KeyHls = `${hlsPrefix}${songId}/${file}`;
+
+        const putCommand = new PutObjectCommand({
+          Bucket: bucket,
+          Key: s3KeyHls, // Key để PUT lên S3
+          Body: content,
+          ContentType: file.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/MP2T',
+        });
+
+        await s3.send(putCommand);
+        console.log(`✅ Uploaded: ${s3KeyHls}`);
+      }
+
+      // Tạo HLS URL để lưu vào DB, đảm bảo các ký tự đặc biệt được encode đúng
+      // path.join sẽ nối các phần, và chúng ta cần encode lại tên file nếu cần
+      const hlsPlaylistKey = `${hlsPrefix}${songId}/playlist.m3u8`;
+      const hlsObjectUrlToSave = `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${hlsPlaylistKey}`;
+
+      await connection.execute(`UPDATE Song SET url = ? WHERE id = ?`, [hlsObjectUrlToSave, songId]);
+      console.log(`✅ Cập nhật URL HLS cho songId = ${songId}`);
+
+    // Event 2: mp3/ only update URL
+    } else if (s3ObjectKey.startsWith(mp3Prefix) && fileExt === '.mp3') {
+      console.log('➡️ Event: MP3 Direct Upload → Update URL');
+      // Sử dụng objectUrlToSave đã được tạo ở trên, chứa key đã encode
+      await connection.execute(`UPDATE Song SET url = ? WHERE id = ?`, [objectUrlToSave, songId]);
+      console.log(`✅ Cập nhật URL MP3 cho songId = ${songId}`);
+
+    // Event 3: imageSong/ and .jpg => update imageUrl
+    } else if (s3ObjectKey.startsWith(imagePrefix) && fileExt === '.jpg') {
+      console.log('➡️ Event: Image Upload → Update imageUrl');
+      // Sử dụng objectUrlToSave đã được tạo ở trên, chứa key đã encode
+      await connection.execute(`UPDATE Song SET imageUrl = ? WHERE id = ?`, [objectUrlToSave, songId]);
+      console.log(`✅ Cập nhật imageUrl cho songId = ${songId}`);
+
+    } else {
+      console.log('❌ Không phải sự kiện hợp lệ. Bỏ qua.');
+    }
+
+  } catch (err) {
+    console.error('❌ Error occurred:', err);
+    throw err;
+  } finally {
+    await connection.end();
+  }
+
+  return {
+    statusCode: 200,
+    body: `✅ Đã xử lý file: ${fileName}`
+  };
+};

@@ -10,10 +10,4 @@ router.post('/register', validateRegistrationInput, checkExistingUser, registerU
 router.post('/login', validateLoginInput, loginUserController);
 router.post('/logout', authenticateToken, logoutUserController);
 
-
-// router.get('/profile', authenticateToken, (req, res) => {
-//   // Nếu đến được đây nghĩa là token hợp lệ và không bị blacklist
-//   res.status(200).json({ message: 'Welcome to your profile!', user: res.locals.user });
-// });
-
 export default router;
