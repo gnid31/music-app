@@ -37,6 +37,7 @@ services:
       DATABASE_URL: mysql://root:123456@mysql:3306/test
       REDIS_PORT: 6379
       REDIS_HOST: redis
+      JWT_SECRET: 642be298-b982-4517-9d0d-bedd6acecdd4
 
 volumes:
   mysql_data:

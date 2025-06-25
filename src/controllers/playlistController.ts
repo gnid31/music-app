@@ -634,18 +634,18 @@ const getPlaylistsController = async (
     const userId = parseInt(req.params.id, 10);
     const authenticateUserId = res.locals.user.id;
     if (isNaN(userId)) {
-      res.status(400).json({ message: "Invalid user ID" });
+      res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid user ID" });
       return;
     }
 
     if (userId !== authenticateUserId) {
-      res.status(403).json({ message: "Forbidden: Access denied" });
+      res.status(StatusCodes.FORBIDDEN).json({ message: "Forbidden: Access denied" });
       return;
     }
 
     const playlists = await getPlaylistsService(userId);
 
-    res.status(200).json({ data: playlists });
+    res.status(StatusCodes.OK).json({ data: playlists });
   } catch (error) {
     console.error("Error in getUserPlaylistsController:", error);
     next(error);
