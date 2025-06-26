@@ -45,5 +45,5 @@ jobs:
           cd ~/app
           docker compose pull
           docker compose up -d --no-deps --force-recreate app
-
+          docker image prune -f
 
