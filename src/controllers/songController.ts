@@ -7,6 +7,8 @@ import {
   getFavoriteSongsService,
   getPlaybackHistoryService,
   playSongService,
+  getTopSongsByListensService,
+  getTopGenresByListensService,
 } from "../services/songService";
 import { StatusCodes } from "http-status-codes";
 import { parsePaginationParams } from "../utils/pagination";
@@ -568,6 +570,121 @@ const playSongController = async (
   }
 };
 
+/**
+ * @swagger
+ * /api/songs/top-listens:
+ *   get:
+ *     summary: Lấy danh sách 50 bài hát có lượt nghe nhiều nhất
+ *     description: Trả về danh sách các bài hát phổ biến nhất dựa trên tổng số lượt nghe.
+ *     tags:
+ *       - Song Statistics
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Số lượng bài hát hàng đầu cần lấy (mặc định là 50).
+ *         example: 50
+ *     responses:
+ *       200:
+ *         description: Danh sách các bài hát hàng đầu được trả về thành công.
+ *         content:
+ *           application/json:\
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   title:
+ *                     type: string
+ *                     example: Tên Bài Hát
+ *                   artist:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         example: Tên Nghệ Sĩ
+ *                   listenCount:
+ *                     type: integer
+ *                     example: 1500
+ *       500:\
+ *         description: Lỗi máy chủ nội bộ.
+ */
+const getTopSongsByListensController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const topSongs = await getTopSongsByListensService(limit);
+    res.status(StatusCodes.OK).json(topSongs);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/**
+ * @swagger
+ * /api/genres/top-listens:
+ *   get:
+ *     summary: Lấy danh sách các thể loại có lượt nghe nhiều nhất trong 1 tuần gần đây
+ *     description: Trả về danh sách các thể loại nhạc phổ biến nhất dựa trên tổng số lượt nghe trong 7 ngày qua.
+ *     tags:
+ *       - Song Statistics
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Số lượng thể loại hàng đầu cần lấy (mặc định là 50).
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: Danh sách các thể loại hàng đầu được trả về thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   genre:
+ *                     type: string
+ *                     example: Pop
+ *                   listenCount:
+ *                     type: integer
+ *                     example: 5000
+ *       500:
+ *         description: Lỗi máy chủ nội bộ.
+ */
+const getTopGenresByListensController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const topGenres = await getTopGenresByListensService(limit);
+    res.status(StatusCodes.OK).json(topGenres);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export {
   getSongByIdController,
   getSongsController,
@@ -576,4 +693,6 @@ export {
   getFavoriteSongsController,
   getPlaybackHistoryController,
   playSongController,
+  getTopSongsByListensController,
+  getTopGenresByListensController
 };

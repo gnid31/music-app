@@ -11,8 +11,8 @@ router.get("/hello", (req, res) => {
 });
 router.use("/auth", authRoute);
 router.use(authenticateToken)
-router.use("/song", songRoute);
-router.use("/playlist", playlistRoute);
+router.use("/songs", songRoute);
+router.use("/playlists", playlistRoute);
 router.use("/user", userRoute);
 
 export default router;
