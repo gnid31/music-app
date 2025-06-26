@@ -19,7 +19,7 @@ router.get("/favorites", getFavoriteSongsController);
 router.delete("/favorites", deleteFavoriteSongController);
 router.post("/favorites", addFavoriteSongController);
 router.get("/top-listens", getTopSongsByListensController);
-router.get("/genres/top-listens", getTopGenresByListensController); // New route for top genres by listens
+router.get("/genre/top-listens", getTopGenresByListensController); // New route for top genres by listens
 router.get("/:id", getSongByIdController);
 router.get("/", getSongsController);
 

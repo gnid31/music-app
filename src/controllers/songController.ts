@@ -572,7 +572,7 @@ const playSongController = async (
 
 /**
  * @swagger
- * /api/songs/top-listens:
+ * /api/song/top-listens:
  *   get:
  *     summary: Lấy danh sách 50 bài hát có lượt nghe nhiều nhất
  *     description: Trả về danh sách các bài hát phổ biến nhất dựa trên tổng số lượt nghe.
@@ -593,7 +593,7 @@ const playSongController = async (
  *       200:
  *         description: Danh sách các bài hát hàng đầu được trả về thành công.
  *         content:
- *           application/json:\
+ *           application/json:
  *             schema:
  *               type: array
  *               items:
@@ -614,7 +614,7 @@ const playSongController = async (
  *                   listenCount:
  *                     type: integer
  *                     example: 1500
- *       500:\
+ *       500:
  *         description: Lỗi máy chủ nội bộ.
  */
 const getTopSongsByListensController = async (
@@ -623,8 +623,8 @@ const getTopSongsByListensController = async (
   next: NextFunction
 ) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-    const topSongs = await getTopSongsByListensService(limit);
+    const { page, limit } = parsePaginationParams(req.query);
+    const topSongs = await getTopSongsByListensService({ page, limit });
     res.status(StatusCodes.OK).json(topSongs);
   } catch (error) {
     next(error);
@@ -634,39 +634,91 @@ const getTopSongsByListensController = async (
 
 /**
  * @swagger
- * /api/genres/top-listens:
+ * /api/song/genre/top-listens:
  *   get:
- *     summary: Lấy danh sách các thể loại có lượt nghe nhiều nhất trong 1 tuần gần đây
- *     description: Trả về danh sách các thể loại nhạc phổ biến nhất dựa trên tổng số lượt nghe trong 7 ngày qua.
+ *     summary: Lấy danh sách thể loại hoặc top bài hát theo thể loại
+ *     description: |
+ *       - Nếu không truyền query `genre`, trả về danh sách các thể loại nhạc (mảng chuỗi).
+ *       - Nếu truyền query `genre`, trả về danh sách các bài hát được nghe nhiều nhất trong thể loại đó (có phân trang).
  *     tags:
  *       - Song Statistics
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
+ *         name: genre
+ *         schema:
+ *           type: string
+ *         description: Tên thể loại muốn lấy top bài hát
+ *         example: Pop
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Trang hiện tại (chỉ áp dụng khi truyền genre)
+ *         example: 1
+ *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           minimum: 1
  *           maximum: 100
- *         description: Số lượng thể loại hàng đầu cần lấy (mặc định là 50).
+ *         description: Số lượng bài hát trên mỗi trang (chỉ áp dụng khi truyền genre)
  *         example: 10
  *     responses:
  *       200:
- *         description: Danh sách các thể loại hàng đầu được trả về thành công.
+ *         description: |
+ *           - Nếu không truyền genre: trả về mảng các thể loại (array of string).
+ *           - Nếu truyền genre: trả về object phân trang các bài hát top của thể loại đó.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   genre:
+ *               oneOf:
+ *                 - type: array
+ *                   items:
  *                     type: string
- *                     example: Pop
- *                   listenCount:
- *                     type: integer
- *                     example: 5000
+ *                   description: Danh sách các thể loại nhạc
+ *                 - type: object
+ *                   properties:
+ *                     genre:
+ *                       type: string
+ *                       example: Pop
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 1
+ *                           title:
+ *                             type: string
+ *                             example: "Tên Bài Hát"
+ *                           artist:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 2
+ *                               name:
+ *                                 type: string
+ *                                 example: "Tên Nghệ Sĩ"
+ *                           listenCount:
+ *                             type: integer
+ *                             example: 1500
+ *                     total:
+ *                       type: integer
+ *                       example: 50
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 5
+ *                     currentPage:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
  *       500:
  *         description: Lỗi máy chủ nội bộ.
  */
@@ -676,8 +728,9 @@ const getTopGenresByListensController = async (
   next: NextFunction
 ) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-    const topGenres = await getTopGenresByListensService(limit);
+    const { page, limit } = parsePaginationParams(req.query);
+    const genre = req.query.genre as string | undefined;
+    const topGenres = await getTopGenresByListensService({ genre, page, limit });
     res.status(StatusCodes.OK).json(topGenres);
   } catch (error) {
     next(error);

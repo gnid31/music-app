@@ -193,8 +193,11 @@ const getPlaybackHistoryService = async ({
   };
 };
 
-const getTopSongsByListensService = async (limit: number = 50) => {
-  const topSongsRaw = await prisma.playbackHistory.groupBy({
+const getTopSongsByListensService = async ({ page, limit }: PaginationParams) => {
+  const { skip, take, currentPage } = getPagination({ page, limit });
+
+  // 1. Lấy tất cả các bản ghi lượt nghe được nhóm theo bài hát để tính tổng số bài hát duy nhất và sau đó phân trang
+  const allTopSongsRaw = await prisma.playbackHistory.groupBy({
     by: ['songId'],
     _count: {
       songId: true,
@@ -204,15 +207,26 @@ const getTopSongsByListensService = async (limit: number = 50) => {
         songId: 'desc',
       },
     },
-    take: limit,
   });
 
-  const songIds = topSongsRaw.map(item => item.songId);
+  const total = allTopSongsRaw.length; // Tổng số bài hát duy nhất có lượt nghe
+  const totalPages = Math.ceil(total / take);
+
+  // 2. Áp dụng phân trang cho danh sách songId đã sắp xếp
+  const paginatedSongIdsRaw = allTopSongsRaw.slice(skip, skip + take);
+  const songIds = paginatedSongIdsRaw.map(item => item.songId);
 
   if (songIds.length === 0) {
-    return [];
+    return {
+      data: [],
+      limit: take,
+      total: total,
+      totalPages: totalPages,
+      currentPage: currentPage,
+    };
   }
 
+  // 3. Lấy thông tin chi tiết của các bài hát đã được phân trang
   const songsWithDetails = await prisma.song.findMany({
     where: {
       id: {
@@ -224,53 +238,111 @@ const getTopSongsByListensService = async (limit: number = 50) => {
     },
   });
 
-  const result = songsWithDetails.map(song => {
-    const countData = topSongsRaw.find(item => item.songId === song.id);
+  // 4. Kết hợp số lượt nghe và sắp xếp lại
+  const data = songsWithDetails.map(song => {
+    const countData = paginatedSongIdsRaw.find(item => item.songId === song.id);
     return {
       ...song,
       listenCount: countData ? countData._count.songId : 0,
     };
-  }).sort((a, b) => b.listenCount - a.listenCount);
+  }).sort((a, b) => b.listenCount - a.listenCount); // Sắp xếp lại để đảm bảo thứ tự chính xác
 
-  return result;
+  return {
+    data,
+    limit: take,
+    total,
+    totalPages,
+    currentPage,
+  };
 };
 
-// New service function to get top genres by listens in the last week
-const getTopGenresByListensService = async (limit: number = 50) => {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+// New service function: get top songs by listens for a specific genre, with pagination
+const getTopSongsByGenreService = async ({ genre, page, limit }: { genre: string, page?: number, limit?: number }) => {
+  const { skip, take, currentPage } = getPagination({ page, limit });
 
-  // Get playback history for the last week, including song genre
-  const recentPlaybackHistory = await prisma.playbackHistory.findMany({
+  // Lấy tất cả các bản ghi playbackHistory của các bài hát thuộc genre này
+  const allTopSongsRaw = await prisma.playbackHistory.findMany({
     where: {
-      playedAt: {
-        gte: oneWeekAgo, // Greater than or equal to one week ago
-      },
-    },
-    include: {
       song: {
-        select: {
-          genre: true,
-        },
+        genre: genre,
       },
+    },
+    select: {
+      songId: true,
     },
   });
 
-  // Aggregate listen counts by genre
-  const genreListenCounts: { [key: string]: number } = {};
-  recentPlaybackHistory.forEach(record => {
-    const genre = record.song.genre;
-    if (genre) {
-      genreListenCounts[genre] = (genreListenCounts[genre] || 0) + 1;
-    }
+  // Đếm số lượt nghe cho từng songId
+  const listenCounts: { [songId: number]: number } = {};
+  allTopSongsRaw.forEach(item => {
+    listenCounts[item.songId] = (listenCounts[item.songId] || 0) + 1;
   });
 
-  // Convert to an array of objects and sort by listen count
-  const sortedGenres = Object.entries(genreListenCounts)
-    .map(([genre, listenCount]) => ({ genre, listenCount }))
+  // Sắp xếp songId theo lượt nghe giảm dần
+  const sortedSongIds = Object.entries(listenCounts)
+    .map(([songId, count]) => ({ songId: Number(songId), listenCount: count }))
     .sort((a, b) => b.listenCount - a.listenCount);
 
-  return sortedGenres.slice(0, limit); // Return top 'limit' genres
+  const total = sortedSongIds.length;
+  const totalPages = Math.ceil(total / take);
+  const paginatedSongIds = sortedSongIds.slice(skip, skip + take);
+  const songIds = paginatedSongIds.map(item => item.songId);
+
+  if (songIds.length === 0) {
+    return {
+      genre,
+      data: [],
+      limit: take,
+      total,
+      totalPages,
+      currentPage,
+    };
+  }
+
+  // Lấy thông tin chi tiết các bài hát
+  const songsWithDetails = await prisma.song.findMany({
+    where: { id: { in: songIds } },
+    include: { artist: true },
+  });
+
+  // Kết hợp listenCount
+  const data = songsWithDetails.map(song => {
+    const countData = paginatedSongIds.find(item => item.songId === song.id);
+    return {
+      ...song,
+      listenCount: countData ? countData.listenCount : 0,
+    };
+  }).sort((a, b) => b.listenCount - a.listenCount);
+
+  return {
+    genre,
+    data,
+    limit: take,
+    total,
+    totalPages,
+    currentPage,
+  };
+};
+
+// API: Lấy danh sách các thể loại có trong hệ thống
+const getAllGenresService = async () => {
+  const genres = await prisma.song.findMany({
+    distinct: ['genre'],
+    select: { genre: true },
+    where: { genre: { not: '' } },
+  });
+  return genres.map(g => g.genre).filter(Boolean);
+};
+
+// API: Lấy danh sách các thể loại, mỗi thể loại trả về top bài hát theo phân trang
+const getTopGenresByListensService = async ({ genre, page, limit }: { genre?: string, page?: number, limit?: number }) => {
+  if (genre) {
+    // Nếu truyền genre, trả về top bài hát của genre đó (phân trang)
+    return getTopSongsByGenreService({ genre, page, limit });
+  }
+  // Nếu không truyền genre, trả về danh sách các genre
+  const genres = await getAllGenresService();
+  return genres;
 };
 
 const playSongService = async (userId: number, songId: number) => {
