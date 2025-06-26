@@ -39,6 +39,7 @@ model Song {
   id        Int     @id @default(autoincrement())
   title     String
   titleNormalized String
+  genre     String
   duration  Int     // thời lượng (giây)
   url       String  // đường dẫn file nhạc
   imageUrl  String? // ảnh bài hát (tùy chọn)

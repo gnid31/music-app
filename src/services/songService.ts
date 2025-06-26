@@ -193,6 +193,86 @@ const getPlaybackHistoryService = async ({
   };
 };
 
+const getTopSongsByListensService = async (limit: number = 50) => {
+  const topSongsRaw = await prisma.playbackHistory.groupBy({
+    by: ['songId'],
+    _count: {
+      songId: true,
+    },
+    orderBy: {
+      _count: {
+        songId: 'desc',
+      },
+    },
+    take: limit,
+  });
+
+  const songIds = topSongsRaw.map(item => item.songId);
+
+  if (songIds.length === 0) {
+    return [];
+  }
+
+  const songsWithDetails = await prisma.song.findMany({
+    where: {
+      id: {
+        in: songIds,
+      },
+    },
+    include: {
+      artist: true,
+    },
+  });
+
+  const result = songsWithDetails.map(song => {
+    const countData = topSongsRaw.find(item => item.songId === song.id);
+    return {
+      ...song,
+      listenCount: countData ? countData._count.songId : 0,
+    };
+  }).sort((a, b) => b.listenCount - a.listenCount);
+
+  return result;
+};
+
+// New service function to get top genres by listens in the last week
+const getTopGenresByListensService = async (limit: number = 50) => {
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  // Get playback history for the last week, including song genre
+  const recentPlaybackHistory = await prisma.playbackHistory.findMany({
+    where: {
+      playedAt: {
+        gte: oneWeekAgo, // Greater than or equal to one week ago
+      },
+    },
+    include: {
+      song: {
+        select: {
+          genre: true,
+        },
+      },
+    },
+  });
+
+  // Aggregate listen counts by genre
+  const genreListenCounts: { [key: string]: number } = {};
+  recentPlaybackHistory.forEach(record => {
+    const genre = record.song.genre;
+    if (genre) {
+      genreListenCounts[genre] = (genreListenCounts[genre] || 0) + 1;
+    }
+  });
+
+  // Convert to an array of objects and sort by listen count
+  const sortedGenres = Object.entries(genreListenCounts)
+    .map(([genre, listenCount]) => ({ genre, listenCount }))
+    .sort((a, b) => b.listenCount - a.listenCount);
+
+  return sortedGenres.slice(0, limit); // Return top 'limit' genres
+};
+
 const playSongService = async (userId: number, songId: number) => {
   const song = await prisma.song.findUnique({
     where: { id: songId },
@@ -221,6 +301,19 @@ const playSongService = async (userId: number, songId: number) => {
     },
   });
 
+  // Xóa các bản ghi lịch sử đã cũ hơn 1 tuần
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); // Set date to 7 days ago
+
+  await prisma.playbackHistory.deleteMany({
+    where: {
+      userId: userId,
+      playedAt: {
+        lt: oneWeekAgo, // Less than one week ago
+      },
+    },
+  });
+
   return song;
 };
 
@@ -231,5 +324,7 @@ export {
   deleteFavoriteSongService,
   getFavoriteSongsService,
   getPlaybackHistoryService,
+  getTopSongsByListensService,
+  getTopGenresByListensService,
   playSongService,
 };
