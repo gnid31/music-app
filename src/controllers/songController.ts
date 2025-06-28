@@ -174,7 +174,7 @@ const getSongsController = async (
 
 /**
  * @swagger
- * /api/song/favorite:
+ * /api/song/favorites:
  *   post:
  *     summary: Thêm bài hát vào danh sách yêu thích của user
  *     tags:
@@ -242,7 +242,7 @@ const addFavoriteSongController = async (
 
 /**
  * @swagger
- * /api/song/favorite:
+ * /api/song/favorites:
  *   delete:
  *     summary: Xóa bài hát khỏi danh sách yêu thích của user
  *     tags:
@@ -308,7 +308,7 @@ const deleteFavoriteSongController = async (
 };
 /**
  * @swagger
- * /api/song/favorite:
+ * /api/song/favorites:
  *   get:
  *     summary: Lấy danh sách bài hát yêu thích của user
  *     tags:
