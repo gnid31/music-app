@@ -8,19 +8,19 @@ import {
   getPlaybackHistoryController,
   playSongController,
   getTopSongsByListensController,
-  getTopGenresByListensController,
+  getTopSongsByGenreController,
 } from "../controllers/songController";
 
 const router = express.Router();
 
-router.get("/play/:songId", playSongController);
+router.post("/:songId/play", playSongController);
 router.get("/history", getPlaybackHistoryController);
 router.get("/favorites", getFavoriteSongsController);
-router.delete("/favorites", deleteFavoriteSongController);
+router.delete("/favorites/:songId", deleteFavoriteSongController);
 router.post("/favorites", addFavoriteSongController);
 router.get("/top-listens", getTopSongsByListensController);
-router.get("/genre/top-listens", getTopGenresByListensController); // New route for top genres by listens
-router.get("/:id", getSongByIdController);
+router.get("/genres/:genreName/top-listens", getTopSongsByGenreController);
+router.get("/:songId", getSongByIdController);
 router.get("/", getSongsController);
 
 export default router;

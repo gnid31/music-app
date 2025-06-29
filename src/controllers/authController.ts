@@ -5,7 +5,7 @@ import {
   registerUserService,
 } from "../services/authService";
 import { Request, Response, NextFunction } from "express";
-import { CustomError } from "../middlewares/errorHandler";
+import { CustomError } from "../utils/customError"; // Corrected path for CustomError
 import { IAuthUserBody } from "../dto/auth.dto";
 
 /**
@@ -46,16 +46,59 @@ import { IAuthUserBody } from "../dto/auth.dto";
  *       201:
  *         description: Người dùng được đăng ký thành công.
  *         content:
- *           text/plain:
+ *           application/json:
  *             schema:
- *               type: string
- *               example: User registered successfully.
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 201
  *       400:
- *         description: Yêu cầu không hợp lệ.
+ *         description: Yêu cầu không hợp lệ. Có thể thiếu trường hoặc mật khẩu không khớp.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Name, username, password, and repeatpassword are required.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 400
  *       409:
  *         description: Tên đăng nhập đã tồn tại.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Username already exists.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 409
  *       500:
  *         description: Lỗi máy chủ nội bộ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 500
  */
 const registerUserController = async (
   req: Request<{}, {}, IAuthUserBody>,
@@ -63,16 +106,22 @@ const registerUserController = async (
   next: NextFunction
 ) => {
   try {
-    const { name, username, password } = req.body;
+    const { name, username, password, repeatpassword } = req.body;
 
-    // Password hashing and user creation logic moved to authService
+    if (!name || !username || !password || !repeatpassword) {
+      throw new CustomError(StatusCodes.BAD_REQUEST, "Name, username, password, and repeatpassword are required.");
+    }
+
+    if (password !== repeatpassword) {
+      throw new CustomError(StatusCodes.BAD_REQUEST, "Password and repeatpassword do not match.");
+    }
+
     await registerUserService(name, username, password);
+    res.status(StatusCodes.CREATED).json({ data: null, message: "User registered successfully.", statusCode: StatusCodes.CREATED });
   } catch (error) {
     console.error("Register error:", error);
-    next(error); // Pass error to middleware
+    next(error);
   }
-
-  res.status(StatusCodes.CREATED).send("User registered successfully.");
 };
 
 /**
@@ -111,12 +160,51 @@ const registerUserController = async (
  *                 token:
  *                   type: string
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJ0ZXN0MiIsImlhdCI6MTc0OTUyMjI1MCwiZXhwIjoxNzQ5NTI1ODUwfQ.KPj-4O7EkgRLFcRuaI0ubnxSa9U_eaIHsvvNjU9XqbQ
+ *                 message:
+ *                   type: string
+ *                   example: Login successful.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
  *       400:
- *         description: Dữ liệu không hợp lệ.
+ *         description: Dữ liệu không hợp lệ. Có thể thiếu tên đăng nhập hoặc mật khẩu.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Username and password are required.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 400
  *       401:
  *         description: Sai tên đăng nhập hoặc mật khẩu.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid credentials
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 401
  *       500:
  *         description: Lỗi máy chủ nội bộ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 500
  */
 
 // Controller function to handle user login requests
@@ -128,13 +216,14 @@ const loginUserController = async (
   try {
     const { username, password } = req.body;
 
-    // Call the loginUser service function
+    if (!username || !password) {
+      throw new CustomError(StatusCodes.BAD_REQUEST, "Username and password are required.");
+    }
+
     const token = await loginUserService(username, password);
 
-    // If login is successful, send the token in the response
-    res.status(StatusCodes.OK).json({ token });
+    res.status(StatusCodes.OK).json({ token, message: "Login successful.", statusCode: StatusCodes.OK });
   } catch (error) {
-    // If an error occurs (e.g., Invalid credentials), pass it to the error handling middleware
     next(error);
   }
 };
@@ -159,7 +248,10 @@ const loginUserController = async (
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Logout successful
+ *                   example: Logout successful.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
  *       401:
  *         description: Token không hợp lệ hoặc không được cung cấp.
  *         content:
@@ -169,7 +261,10 @@ const loginUserController = async (
  *               properties:
  *                 message:
  *                   type: string
- *                   example: No token provided
+ *                   example: No token provided.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 401
  *       400:
  *         description: Yêu cầu không hợp lệ, ví dụ như token đã bị vô hiệu hóa trước đó hoặc các lỗi liên quan đến xử lý business logic.
  *         content:
@@ -179,7 +274,10 @@ const loginUserController = async (
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Token đã bị vô hiệu hóa.
+ *                   example: Token is already expired.
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 400
  *       500:
  *         description: Lỗi máy chủ nội bộ khi xử lý đăng xuất.
  *         content:
@@ -190,6 +288,9 @@ const loginUserController = async (
  *                 message:
  *                   type: string
  *                   example: Internal Server Error
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 500
  */
 
 
@@ -198,39 +299,25 @@ const logoutUserController = async (
   res: Response,
   next: NextFunction
 ) => {
-  // Hàm điều khiển (Controller) xử lý yêu cầu đăng xuất người dùng
   try {
-    // Trích xuất tiêu đề (header) 'Authorization' từ yêu cầu
     const authHeader = req.headers["authorization"];
-    // Tách chuỗi tiêu đề để lấy token (giả định định dạng "Bearer token")
     const token = authHeader && authHeader.split(" ")[1];
+
     if (!token) {
-      throw new CustomError("No token provided", StatusCodes.UNAUTHORIZED);
+      throw new CustomError(StatusCodes.UNAUTHORIZED, "No token provided.");
     }
-    //const decoded = jwt.decode(token) as jwt.JwtPayload;
 
-    // Gọi hàm dịch vụ (service) để xử lý logic đăng xuất cốt lõi (như thêm token vào danh sách đen - blacklist)
-    const result = await logoutUserService(token, res.locals.user);
+    // In a real application, you would ideally extract user info from the token AFTER verification,
+    // or simply pass the token to the service for blacklisting without needing user.exp here.
+    // Assuming authMiddleware has already attached user info to res.locals for consistency
+    const user = res.locals.user; 
 
-    // Kiểm tra kết quả trả về từ hàm dịch vụ
-    if (result.success) {
-      // Nếu đăng xuất thành công, gửi phản hồi 200 OK
-      res.status(StatusCodes.OK).json({ message: result.message }); // Sử dụng StatusCodes.OK cho thành công
-    } else {
-      // Nếu đăng xuất thất bại, xử lý các trường hợp lỗi khác nhau
-      // Kiểm tra xem thông báo lỗi có phải là "No token provided" không
-      res
-        .status(
-          result.message === "No token provided"
-            ? StatusCodes.UNAUTHORIZED
-            : StatusCodes.BAD_REQUEST
-        )
-        .json({ message: result.message }); // Sử dụng 401 cho token bị thiếu, 400 cho các yêu cầu sai khác
-    }
+    const result = await logoutUserService(token, user);
+
+    res.status(StatusCodes.OK).json({ message: result.message, statusCode: StatusCodes.OK });
   } catch (error) {
-    // Nếu có bất kỳ lỗi không mong muốn nào xảy ra trong quá trình xử lý
-    console.error("Logout error:", error); // Ghi log lỗi để gỡ lỗi
-    next(error); // Chuyển lỗi đến middleware xử lý lỗi tiếp theo
+    console.error("Logout error:", error);
+    next(error);
   }
 };
 
@@ -238,4 +325,8 @@ const logoutUserController = async (
 // router.post('/logout', logoutUser);
 
 // Export both controllers
-export { registerUserController, loginUserController, logoutUserController };
+export {
+  registerUserController,
+  loginUserController,
+  logoutUserController
+};

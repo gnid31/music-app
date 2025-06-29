@@ -1,16 +1,6 @@
 import { NextFunction, Response, Request } from "express";
 import { StatusCodes } from "http-status-codes";
-
-class CustomError extends Error {
-  statusCode: number;
-
-  constructor(message: string, statusCode: number) {
-    super(message);
-    this.statusCode = statusCode;
-    // Để giữ đúng prototype chain khi dùng extends Error
-    Object.setPrototypeOf(this, CustomError.prototype);
-  }
-}
+import { CustomError } from "../utils/customError";
 
 const errorHandler = (
   err: CustomError,
@@ -23,7 +13,7 @@ const errorHandler = (
   const statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR; // Use error's status code if available, otherwise 500
   const message = err.message || "Something went wrong";
 
-  res.status(statusCode).send(message);
+  res.status(statusCode).json({ statusCode: statusCode, message: message, data: null });
 };
 
-export { errorHandler, CustomError };
+export { errorHandler };

@@ -1,6 +1,8 @@
 import { PrismaClient, Song, User } from "@prisma/client";
 import { removeVietnameseTones } from "../utils/removeTone";
 import { getPagination, PaginationParams } from "../utils/pagination";
+import { CustomError } from "../utils/customError";
+import { StatusCodes } from "http-status-codes";
 
 const prisma = new PrismaClient();
 
@@ -48,7 +50,7 @@ const getSongsService = async ({ keyword, page, limit }: PaginationParams) => {
   ]);
 
   return {
-    data,
+    songs: data,
     limit: take,
     total,
     totalPages: Math.ceil(total / take),
@@ -61,7 +63,7 @@ const addFavoriteSongService = async (userId: number, songId: number) => {
   // Kiểm tra bài hát có tồn tại không
   const song = await prisma.song.findUnique({ where: { id: songId } });
   if (!song) {
-    throw new Error("Song not found");
+    throw new CustomError(StatusCodes.NOT_FOUND, "Song not found");
   }
 
   // Kiểm tra xem bài hát đã được yêu thích chưa
@@ -71,7 +73,7 @@ const addFavoriteSongService = async (userId: number, songId: number) => {
   });
 
   if (user?.favorites.some((fav: { id: number }) => fav.id === songId)) {
-    throw new Error("Song already in favorites");
+    throw new CustomError(StatusCodes.CONFLICT, "Song already in favorites");
   }
 
   // Thêm bài hát vào mục yêu thích
@@ -100,7 +102,7 @@ const deleteFavoriteSongService = async (userId: number, songId: number) => {
   });
 
   if (!user || user.favorites.length === 0) {
-    throw new Error("Song is not in favorite list");
+    throw new CustomError(StatusCodes.NOT_FOUND, "Song is not in favorite list");
   }
 
   // Xoá quan hệ yêu thích
@@ -251,71 +253,53 @@ const getTopSongsByListensService = async ({ page, limit }: PaginationParams) =>
     data,
     limit: take,
     total,
-    totalPages,
+    totalPages: totalPages,
     currentPage,
   };
 };
 
-// New service function: get top songs by listens for a specific genre, with pagination
 const getTopSongsByGenreService = async ({ genre, page, limit }: { genre: string, page?: number, limit?: number }) => {
   const { skip, take, currentPage } = getPagination({ page, limit });
 
-  // Lấy tất cả các bản ghi playbackHistory của các bài hát thuộc genre này
-  const allTopSongsRaw = await prisma.playbackHistory.findMany({
+  // 1. Lấy tất cả các bản ghi lượt nghe được nhóm theo bài hát và thể loại để tính tổng số lượt nghe theo từng bài hát
+  const allPlaybackHistory = await prisma.playbackHistory.findMany({
     where: {
       song: {
         genre: genre,
       },
     },
-    select: {
-      songId: true,
+    include: {
+      song: {
+        include: {
+          artist: true,
+        },
+      },
     },
   });
 
-  // Đếm số lượt nghe cho từng songId
-  const listenCounts: { [songId: number]: number } = {};
-  allTopSongsRaw.forEach(item => {
-    listenCounts[item.songId] = (listenCounts[item.songId] || 0) + 1;
+  // 2. Tính toán tổng lượt nghe cho mỗi bài hát trong thể loại đó
+  const songListenCounts: { [songId: number]: { count: number, songDetails: any } } = {};
+  allPlaybackHistory.forEach(history => {
+    if (history.song) {
+      if (!songListenCounts[history.song.id]) {
+        songListenCounts[history.song.id] = { count: 0, songDetails: history.song };
+      }
+      songListenCounts[history.song.id].count++;
+    }
   });
 
-  // Sắp xếp songId theo lượt nghe giảm dần
-  const sortedSongIds = Object.entries(listenCounts)
-    .map(([songId, count]) => ({ songId: Number(songId), listenCount: count }))
-    .sort((a, b) => b.listenCount - a.listenCount);
+  // 3. Chuyển đổi thành mảng và sắp xếp theo lượt nghe giảm dần
+  const sortedSongs = Object.values(songListenCounts)
+    .sort((a, b) => b.count - a.count)
+    .map(item => ({ ...item.songDetails, listenCount: item.count }));
 
-  const total = sortedSongIds.length;
+  const total = sortedSongs.length;
   const totalPages = Math.ceil(total / take);
-  const paginatedSongIds = sortedSongIds.slice(skip, skip + take);
-  const songIds = paginatedSongIds.map(item => item.songId);
 
-  if (songIds.length === 0) {
-    return {
-      genre,
-      data: [],
-      limit: take,
-      total,
-      totalPages,
-      currentPage,
-    };
-  }
-
-  // Lấy thông tin chi tiết các bài hát
-  const songsWithDetails = await prisma.song.findMany({
-    where: { id: { in: songIds } },
-    include: { artist: true },
-  });
-
-  // Kết hợp listenCount
-  const data = songsWithDetails.map(song => {
-    const countData = paginatedSongIds.find(item => item.songId === song.id);
-    return {
-      ...song,
-      listenCount: countData ? countData.listenCount : 0,
-    };
-  }).sort((a, b) => b.listenCount - a.listenCount);
+  // 4. Áp dụng phân trang
+  const data = sortedSongs.slice(skip, skip + take);
 
   return {
-    genre,
     data,
     limit: take,
     total,
@@ -324,79 +308,81 @@ const getTopSongsByGenreService = async ({ genre, page, limit }: { genre: string
   };
 };
 
-// API: Lấy danh sách các thể loại có trong hệ thống
-const getAllGenresService = async () => {
-  const genres = await prisma.song.findMany({
-    distinct: ['genre'],
-    select: { genre: true },
-    where: { genre: { not: '' } },
-  });
-  return genres.map(g => g.genre).filter(Boolean);
-};
+// const getAllGenresService = async () => {
+//   const genres = await prisma.song.findMany({
+//     distinct: ['genre'],
+//     select: {
+//       genre: true,
+//     },
+//   });
+//   // Chuyển đổi kết quả thành một mảng các chuỗi genre
+//   return genres.map(item => item.genre);
+// };
 
-// API: Lấy danh sách các thể loại, mỗi thể loại trả về top bài hát theo phân trang
-const getTopGenresByListensService = async ({ genre, page, limit }: { genre?: string, page?: number, limit?: number }) => {
-  if (genre) {
-    // Nếu truyền genre, trả về top bài hát của genre đó (phân trang)
-    return getTopSongsByGenreService({ genre, page, limit });
-  }
-  // Nếu không truyền genre, trả về danh sách các genre
-  const genres = await getAllGenresService();
-  return genres;
-};
+// const getTopGenresByListensService = async ({ page, limit }: PaginationParams) => {
+// ... existing code ...
+// };
 
 const playSongService = async (userId: number, songId: number) => {
-  const song = await prisma.song.findUnique({
-    where: { id: songId },
-    select: {
-      id: true,
-      url: true,
-    },
-  });
-
+  const song = await prisma.song.findUnique({ where: { id: songId } });
   if (!song) {
-    throw new Error("Song not found");
+    throw new CustomError(StatusCodes.NOT_FOUND, "Song not found");
   }
 
-  // Xoá bản ghi lịch sử cũ (nếu có)
-  await prisma.playbackHistory.deleteMany({
-    where: {
-      userId,
-      songId,
-    },
-  });
-  // Ghi lại lịch sử phát nhạc
-  await prisma.playbackHistory.create({
-    data: {
-      userId,
-      songId,
-    },
-  });
-
-  // Xóa các bản ghi lịch sử đã cũ hơn 1 tuần
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); // Set date to 7 days ago
-
-  await prisma.playbackHistory.deleteMany({
+  // Check if a playback history entry for this user and song already exists
+  const existingPlayback = await prisma.playbackHistory.findFirst({
     where: {
       userId: userId,
+      songId: songId,
+    },
+  });
+
+  if (existingPlayback) {
+    // If it exists, update the playedAt timestamp
+    await prisma.playbackHistory.update({
+      where: { id: existingPlayback.id },
+      data: {
+        playedAt: new Date(),
+      },
+    });
+  } else {
+    // If it doesn't exist, create a new entry
+    await prisma.playbackHistory.create({
+      data: {
+        userId,
+        songId,
+      },
+    });
+  }
+
+  return { message: "Playback recorded successfully.", songId };
+};
+
+const deleteOldPlaybackHistory = async () => {
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+  const result = await prisma.playbackHistory.deleteMany({
+    where: {
       playedAt: {
-        lt: oneWeekAgo, // Less than one week ago
+        lt: threeDaysAgo,
       },
     },
   });
 
-  return song;
+  console.log(`Deleted ${result.count} old playback history records.`);
+  return result.count;
 };
 
 export {
-  getSongByIdService,
   getSongsService,
+  getSongByIdService,
   addFavoriteSongService,
   deleteFavoriteSongService,
   getFavoriteSongsService,
   getPlaybackHistoryService,
   getTopSongsByListensService,
-  getTopGenresByListensService,
+  getTopSongsByGenreService,
   playSongService,
+  deleteOldPlaybackHistory,
 };

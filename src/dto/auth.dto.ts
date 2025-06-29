@@ -1,7 +1,8 @@
 interface IAuthUserBody {
-  name: string;
+  name?: string;
   username: string;
   password: string;
+  repeatpassword?: string;
 }
 interface ICheckUsernameBody {
   username: string;

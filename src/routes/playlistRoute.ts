@@ -13,11 +13,11 @@ const router = express.Router();
 
 // Route để tạo playlist
 // Sử dụng middlewar để bảo vệ route này
-router.delete("/delete/:playlistId", deleteSongToPlaylistController)
+router.delete("/:playlistId/songs/:songId", deleteSongToPlaylistController);
 router.delete("/:playlistId", deletePlaylistController);
-router.post("/:playlistId", addSongToPlaylistController);
+router.post("/:playlistId/songs", addSongToPlaylistController);
 router.put("/:playlistId", updatePlaylistNameController);
 router.post("/", createPlaylistController);
-router.get("/:id", getPlaylistsController);
-router.get("/songs/:playlistId", getSongsPlaylistController);
+router.get("/", getPlaylistsController);
+router.get("/:playlistId/songs", getSongsPlaylistController);
 export default router;
