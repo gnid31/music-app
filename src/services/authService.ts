@@ -1,7 +1,10 @@
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import type { User } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import redisClient from "../config/redisClient";
+import { CustomError } from "../utils/customError";
+import { StatusCodes } from "http-status-codes";
 
 const prisma = new PrismaClient();
 
@@ -46,6 +49,15 @@ const registerUserService = async (
   password: string
 ): Promise<User | null> => {
   try {
+    if (!name || !username || !password) {
+      throw new CustomError(StatusCodes.BAD_REQUEST, "Name, username, and password are required.");
+    }
+
+    const existingUser = await findUserByUsername(username);
+    if (existingUser) {
+      throw new CustomError(StatusCodes.CONFLICT, "Username already exists.");
+    }
+
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -68,15 +80,13 @@ const loginUserService = async (
   const user = await findUserByUsername(username);
 
   if (!user) {
-    const error = new Error("Invalid credentials");
-    throw error;
+    throw new CustomError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
   }
 
   const isPasswordMatch = await bcrypt.compare(password, user.password);
 
   if (!isPasswordMatch) {
-    const error = new Error("Invalid credentials");
-    throw error;
+    throw new CustomError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
   }
 
   const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
@@ -100,6 +110,7 @@ const logoutUserService = async (token: string, user: any) => {
       );
     } else {
       console.log(`Service: Attempted to blacklist an expired token: ${token}`);
+      throw new CustomError(StatusCodes.BAD_REQUEST, "Token is already expired.");
     }
 
     return { success: true, message: "Logout successful" };
