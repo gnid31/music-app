@@ -97,7 +97,8 @@ const addSongToPlaylistService = async (
     // Không tìm thấy playlist hoặc không phải của user
     throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
   }
-
+  console.log("----------------------------------", typeof songId);
+  console.log("----------------------------------", songId);
   // Chuyển đổi songId thành số nguyên
   const songIdInt = Number(songId);
 
