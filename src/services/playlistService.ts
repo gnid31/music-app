@@ -98,12 +98,15 @@ const addSongToPlaylistService = async (
     throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
   }
 
+  // Chuyển đổi songId thành số nguyên
+  const songIdInt = Number(songId);
+
   // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
   const exists = await prisma.playlistSong.findUnique({
     where: {
       playlistId_songId: {
         playlistId,
-        songId,
+        songId: songIdInt,
       },
     },
   });
@@ -116,7 +119,7 @@ const addSongToPlaylistService = async (
   const addedSong = await prisma.playlistSong.create({
     data: {
       playlistId,
-      songId,
+      songId: songIdInt,
     },
   });
 
@@ -139,12 +142,15 @@ const deleteSongToPlaylistService = async (
     throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
   }
 
+  // Chuyển đổi songId thành số nguyên
+  const songIdInt = Number(songId);
+
   // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
   const exists = await prisma.playlistSong.findUnique({
     where: {
       playlistId_songId: {
         playlistId,
-        songId,
+        songId: songIdInt,
       },
     },
   });
@@ -158,7 +164,7 @@ const deleteSongToPlaylistService = async (
     where: {
       playlistId_songId: {
         playlistId,
-        songId,
+        songId: songIdInt,
       },
     },
   });
