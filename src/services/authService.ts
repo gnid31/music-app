@@ -49,10 +49,6 @@ const registerUserService = async (
   password: string
 ): Promise<User | null> => {
   try {
-    if (!name || !username || !password) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, "Name, username, and password are required.");
-    }
-
     const existingUser = await findUserByUsername(username);
     if (existingUser) {
       throw new CustomError(StatusCodes.CONFLICT, "Username already exists.");

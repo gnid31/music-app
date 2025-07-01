@@ -6,7 +6,7 @@ import {
 } from "../services/authService";
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "../utils/customError"; // Corrected path for CustomError
-import { IAuthUserBody } from "../dto/auth.dto";
+import { ILoginUserBody, IRegisterUserBody } from "../dto/auth.dto";
 
 /**
  * @swagger
@@ -101,23 +101,21 @@ import { IAuthUserBody } from "../dto/auth.dto";
  *                   example: 500
  */
 const registerUserController = async (
-  req: Request<{}, {}, IAuthUserBody>,
+  req: Request<{}, {}, IRegisterUserBody>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { name, username, password, repeatpassword } = req.body;
-
-    if (!name || !username || !password || !repeatpassword) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, "Name, username, password, and repeatpassword are required.");
-    }
-
-    if (password !== repeatpassword) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, "Password and repeatpassword do not match.");
-    }
+    const { name, username, password } = req.body;
 
     await registerUserService(name, username, password);
-    res.status(StatusCodes.CREATED).json({ data: null, message: "User registered successfully.", statusCode: StatusCodes.CREATED });
+    res
+      .status(StatusCodes.CREATED)
+      .json({
+        data: null,
+        message: "User registered successfully.",
+        statusCode: StatusCodes.CREATED,
+      });
   } catch (error) {
     console.error("Register error:", error);
     next(error);
@@ -209,20 +207,21 @@ const registerUserController = async (
 
 // Controller function to handle user login requests
 const loginUserController = async (
-  req: Request<{}, {}, IAuthUserBody>,
+  req: Request<{}, {}, ILoginUserBody>,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const { username, password } = req.body;
-
-    if (!username || !password) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, "Username and password are required.");
-    }
-
     const token = await loginUserService(username, password);
 
-    res.status(StatusCodes.OK).json({ token, message: "Login successful.", statusCode: StatusCodes.OK });
+    res
+      .status(StatusCodes.OK)
+      .json({
+        token,
+        message: "Login successful.",
+        statusCode: StatusCodes.OK,
+      });
   } catch (error) {
     next(error);
   }
@@ -293,7 +292,6 @@ const loginUserController = async (
  *                   example: 500
  */
 
-
 const logoutUserController = async (
   req: Request,
   res: Response,
@@ -310,11 +308,13 @@ const logoutUserController = async (
     // In a real application, you would ideally extract user info from the token AFTER verification,
     // or simply pass the token to the service for blacklisting without needing user.exp here.
     // Assuming authMiddleware has already attached user info to res.locals for consistency
-    const user = res.locals.user; 
+    const user = res.locals.user;
 
     const result = await logoutUserService(token, user);
 
-    res.status(StatusCodes.OK).json({ message: result.message, statusCode: StatusCodes.OK });
+    res
+      .status(StatusCodes.OK)
+      .json({ message: result.message, statusCode: StatusCodes.OK });
   } catch (error) {
     console.error("Logout error:", error);
     next(error);
@@ -325,8 +325,4 @@ const logoutUserController = async (
 // router.post('/logout', logoutUser);
 
 // Export both controllers
-export {
-  registerUserController,
-  loginUserController,
-  logoutUserController
-};
+export { registerUserController, loginUserController, logoutUserController };
