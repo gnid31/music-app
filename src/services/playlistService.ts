@@ -100,7 +100,7 @@ const addSongToPlaylistService = async (
   console.log("----------------------------------", typeof songId);
   console.log("----------------------------------", songId);
   // Chuyển đổi songId thành số nguyên
-  const songIdInt = Number(songId);
+  const songIdInt = songId;
 
   // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
   const exists = await prisma.playlistSong.findUnique({
