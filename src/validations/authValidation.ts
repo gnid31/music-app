@@ -3,6 +3,7 @@ import { findUserByUsername } from "../services/authService";
 import { StatusCodes } from "http-status-codes";
 import { Request, Response, NextFunction } from "express";
 import { ICheckUsernameBody } from "../dto/auth.dto";
+import { CustomError } from "../utils/customError";
 // Định nghĩa schema (cấu trúc và ràng buộc) cho dữ liệu đầu vào khi đăng ký
 const registrationSchema = Joi.object({
   // Trường username: phải là chuỗi và là trường bắt buộc
@@ -28,15 +29,12 @@ const validateRegistrationInput = (
   // Nếu có lỗi trong quá trình validation
   if (error) {
     // Trả về response với mã trạng thái 400 (Bad Request) và thông báo lỗi chi tiết từ Joi
-    res.status(StatusCodes.BAD_REQUEST).send(error.message);
-    return;
+    return next(new CustomError(StatusCodes.BAD_REQUEST, error.message));
   }
 
   // Nếu dữ liệu hợp lệ, chuyển quyền điều khiển sang middleware/handler tiếp theo
   next();
 };
-
-
 
 // Middleware bất đồng bộ để kiểm tra xem người dùng với username đã cho có tồn tại trong cơ sở dữ liệu chưa
 const checkExistingUser = async (
@@ -52,8 +50,7 @@ const checkExistingUser = async (
   // Nếu tìm thấy người dùng (nghĩa là username đã tồn tại)
   if (existingUser) {
     // Trả về response với mã trạng thái 409 (Conflict) và thông báo lỗi
-    res.status(StatusCodes.CONFLICT).send("Username already exists.");
-    return;
+    return next(new CustomError(StatusCodes.CONFLICT, "Username already exists."));
   }
 
   // Nếu không tìm thấy người dùng (username chưa tồn tại), chuyển quyền điều khiển sang middleware/handler tiếp theo
@@ -81,8 +78,7 @@ const validateLoginInput = (
   if (error) {
     // Trả về response với mã trạng thái 400 (Bad Request) và thông báo lỗi
     // Sử dụng error.message để lấy chuỗi tổng hợp các lỗi
-    res.status(StatusCodes.BAD_REQUEST).send(error.message);
-    return;
+    return next(new CustomError(StatusCodes.BAD_REQUEST, error.message));
   }
 
   // Nếu dữ liệu hợp lệ, chuyển quyền điều khiển sang middleware/handler tiếp theo

@@ -63,7 +63,10 @@ const registerUserService = async (
     return newUser;
   } catch (error) {
     console.error("Service Registration error:", error);
-    throw error;
+    if (error instanceof CustomError) {
+      throw error;
+    }
+    throw new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, "Registration failed due to an unexpected error.");
   }
 };
 
