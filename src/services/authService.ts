@@ -49,11 +49,6 @@ const registerUserService = async (
   password: string
 ): Promise<User | null> => {
   try {
-    const existingUser = await findUserByUsername(username);
-    if (existingUser) {
-      throw new CustomError(StatusCodes.CONFLICT, "Username already exists.");
-    }
-
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
