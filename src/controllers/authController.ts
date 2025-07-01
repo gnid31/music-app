@@ -50,16 +50,16 @@ import { ILoginUserBody, IRegisterUserBody } from "../dto/auth.dto";
  *             schema:
  *               type: object
  *               properties:
- *                 data:
- *                   type: object
- *                   nullable: true
- *                   example: null
  *                 message:
  *                   type: string
  *                   example: User registered successfully.
  *                 statusCode:
  *                   type: integer
  *                   example: 201
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       400:
  *         description: Yêu cầu không hợp lệ. Có thể thiếu trường hoặc mật khẩu không khớp.
  *         content:
@@ -67,12 +67,16 @@ import { ILoginUserBody, IRegisterUserBody } from "../dto/auth.dto";
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Name, username, password, and repeatpassword are required.
  *                 statusCode:
  *                   type: integer
  *                   example: 400
+ *                 message:
+ *                   type: string
+ *                   example: Name, username, password, and repeatpassword are required.
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       409:
  *         description: Tên đăng nhập đã tồn tại.
  *         content:
@@ -80,12 +84,16 @@ import { ILoginUserBody, IRegisterUserBody } from "../dto/auth.dto";
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Username already exists.
  *                 statusCode:
  *                   type: integer
  *                   example: 409
+ *                 message:
+ *                   type: string
+ *                   example: Username already exists.
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       500:
  *         description: Lỗi máy chủ nội bộ.
  *         content:
@@ -93,12 +101,16 @@ import { ILoginUserBody, IRegisterUserBody } from "../dto/auth.dto";
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Internal Server Error
  *                 statusCode:
  *                   type: integer
  *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  */
 const registerUserController = async (
   req: Request<{}, {}, IRegisterUserBody>,
@@ -171,12 +183,16 @@ const registerUserController = async (
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Username and password are required.
  *                 statusCode:
  *                   type: integer
  *                   example: 400
+ *                 message:
+ *                   type: string
+ *                   example: Username and password are required.
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       401:
  *         description: Sai tên đăng nhập hoặc mật khẩu.
  *         content:
@@ -184,12 +200,16 @@ const registerUserController = async (
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Invalid credentials
  *                 statusCode:
  *                   type: integer
  *                   example: 401
+ *                 message:
+ *                   type: string
+ *                   example: Invalid credentials
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       500:
  *         description: Lỗi máy chủ nội bộ.
  *         content:
@@ -197,12 +217,16 @@ const registerUserController = async (
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Internal Server Error
  *                 statusCode:
  *                   type: integer
  *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  */
 
 // Controller function to handle user login requests
@@ -252,44 +276,56 @@ const loginUserController = async (
  *                   type: integer
  *                   example: 200
  *       401:
- *         description: Token không hợp lệ hoặc không được cung cấp.
+ *         description: Token không hợp lệ hoặc đã hết hạn.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: No token provided.
  *                 statusCode:
  *                   type: integer
  *                   example: 401
+ *                 message:
+ *                   type: string
+ *                   example: Token has been revoked or Invalid or expired token.
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       400:
- *         description: Yêu cầu không hợp lệ, ví dụ như token đã bị vô hiệu hóa trước đó hoặc các lỗi liên quan đến xử lý business logic.
+ *         description: Token đã hết hạn khi cố gắng blacklist.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Token is already expired.
  *                 statusCode:
  *                   type: integer
  *                   example: 400
+ *                 message:
+ *                   type: string
+ *                   example: Token is already expired.
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *       500:
- *         description: Lỗi máy chủ nội bộ khi xử lý đăng xuất.
+ *         description: Lỗi máy chủ nội bộ.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Internal Server Error
  *                 statusCode:
  *                   type: integer
  *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server Error
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  */
 
 const logoutUserController = async (

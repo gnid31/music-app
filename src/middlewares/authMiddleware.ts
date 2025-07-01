@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken"; // Import jwt đầy đủ
 import redisClient from "../config/redisClient"; // Import client Redis đã kết nối đúng cách
 import { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import { CustomError } from "../utils/customError"; // Import CustomError
 
 const authenticateToken = async (
   req: Request,
@@ -13,8 +14,7 @@ const authenticateToken = async (
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    res.sendStatus(StatusCodes.UNAUTHORIZED); // Không có token
-    return;
+    return next(new CustomError(StatusCodes.UNAUTHORIZED, "No token provided."));
   }
 
   // *** Bước quan trọng: Kiểm tra token trong Redis blacklist ***
@@ -25,8 +25,7 @@ const authenticateToken = async (
     if (reply) {
       // Nếu token tồn tại trong Redis (blacklist)
       console.log(`Blacklisted token access attempt: ${token}`);
-      res.status(StatusCodes.UNAUTHORIZED).json({ message: "Token has been revoked" }); // Trả về lỗi 401 hoặc 403
-      return;
+      return next(new CustomError(StatusCodes.UNAUTHORIZED, "Token has been revoked.")); // Trả về lỗi 401 hoặc 403
     }
 
     // Nếu token KHÔNG có trong Redis blacklist, tiến hành xác minh token
@@ -37,8 +36,7 @@ const authenticateToken = async (
         console.log(err);
 
         // Lỗi xác minh (ví dụ: token hết hạn, chữ ký sai)
-        res.status(StatusCodes.UNAUTHORIZED).json({ message: "Invalid or expired token" });
-        return;
+        return next(new CustomError(StatusCodes.UNAUTHORIZED, "Invalid or expired token."));
       }
       // Xác minh thành công, lưu thông tin user vào respone và chuyển tiếp
       res.locals.user = user;
@@ -47,8 +45,7 @@ const authenticateToken = async (
   } catch (err) {
     console.error("Redis check error or JWT verification error:", err);
     // Xử lý lỗi, có thể trả về 500
-    res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
-    return;
+    return next(new CustomError(StatusCodes.INTERNAL_SERVER_ERROR, "Authentication failed due to an unexpected error."));
   }
 };
 
