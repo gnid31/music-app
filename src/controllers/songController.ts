@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import {
   getSongsService,
-  getSongByIdService,
   addFavoriteSongService,
   deleteFavoriteSongService,
   getFavoriteSongsService,
@@ -13,124 +12,6 @@ import {
 import { StatusCodes } from "http-status-codes";
 import { parsePaginationParams } from "../utils/pagination";
 import { CustomError } from "../utils/customError";
-
-/**
- * @swagger
- * /api/songs/{songId}:
- *   get:
- *     summary: Lấy thông tin bài hát theo ID
- *     description: Trả về thông tin chi tiết của bài hát dựa trên ID.
- *     tags:
- *       - Song
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: songId
- *         required: true
- *         description: ID của bài hát cần truy vấn
- *         schema:
- *           type: integer
- *           example: 5
- *     responses:
- *       200:
- *         description: Trả về thông tin bài hát.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                   example: 5
- *                 title:
- *                   type: string
- *                   example: Buổi sáng bình yên
- *                 artist:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     name:
- *                       type: string
- *                       example: Mỹ Tâm
- *                 url:
- *                   type: string
- *                   example: http://example.com/song.mp3
- *                 imageUrl:
- *                   type: string
- *                   example: http://example.com/song.jpg
- *                 duration:
- *                   type: integer
- *                   description: Thời lượng bài hát (giây)
- *                   example: 210
- *                 message:
- *                   type: string
- *                   example: Song fetched successfully.
- *                 statusCode:
- *                   type: integer
- *                   example: 200
- *       400:
- *         description: | 
- *           ID bài hát không hợp lệ.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Invalid song ID provided.
- *                 statusCode:
- *                   type: integer
- *                   example: 400
- *       404:
- *         description: |
- *           Không tìm thấy bài hát.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Song not found.
- *                 statusCode:
- *                   type: integer
- *                   example: 404
- *       500:
- *         description: |
- *           Lỗi máy chủ nội bộ.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Internal Server Error
- *                 statusCode:
- *                   type: integer
- *                   example: 500
- */
-
-const getSongByIdController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const songId = parseInt(req.params.songId, 10);
-    if (isNaN(songId)) {
-      throw new CustomError(StatusCodes.BAD_REQUEST, "Invalid song ID provided.");
-    }
-    const song = await getSongByIdService(songId);
-    res.status(StatusCodes.OK).json({ ...song, message: "Song fetched successfully." });
-  } catch (error) {
-    next(error);
-  }
-};
 
 /**
  * @swagger
@@ -1151,7 +1032,6 @@ const getTopSongsByGenreController = async (
 };
 
 export {
-  getSongByIdController,
   getSongsController,
   addFavoriteSongController,
   deleteFavoriteSongController,

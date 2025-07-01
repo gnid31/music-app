@@ -3,6 +3,8 @@ import { PrismaClient, Playlist } from "@prisma/client";
 import { getPagination, PaginationParams } from "../utils/pagination";
 import { CustomError } from "../utils/customError";
 import { StatusCodes } from "http-status-codes";
+import { PaginationResult } from "../utils/paginationResult";
+import { makePaginationResult } from "../utils/makePaginationResult";
 
 const prisma = new PrismaClient();
 
@@ -184,7 +186,7 @@ const getSongsPlaylistService = async ({
   userId,
   page,
   limit,
-}: PaginationParams) => {
+}: PaginationParams): Promise<PaginationResult<any>> => {
   const playlist = await prisma.playlist.findFirst({
     where: {
       id: playlistId,
@@ -215,13 +217,7 @@ const getSongsPlaylistService = async ({
     prisma.playlistSong.count({ where: { playlistId } }),
   ]);
 
-  return {
-    playlistSongs: data,
-    total,
-    currentPage,
-    totalPages: Math.ceil(total / take),
-    limit: take,
-  };
+  return makePaginationResult(data, total, take, currentPage);
 };
 
 export {

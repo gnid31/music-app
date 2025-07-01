@@ -34,9 +34,10 @@ app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
 
   schedule('0 0 * * *', async () => {
-    console.log('Running daily playback history cleanup...');
-    await deleteOldPlaybackHistory();
-  });
+  console.log('Running daily playback history cleanup ...');
+  await deleteOldPlaybackHistory();
+});
+
 });
 
 export default app;

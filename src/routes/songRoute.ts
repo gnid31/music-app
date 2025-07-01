@@ -1,7 +1,6 @@
 import express from "express";
 import {
   getSongsController,
-  getSongByIdController,
   addFavoriteSongController,
   deleteFavoriteSongController,
   getFavoriteSongsController,
@@ -20,7 +19,6 @@ router.delete("/favorites/:songId", deleteFavoriteSongController);
 router.post("/favorites", addFavoriteSongController);
 router.get("/top-listens", getTopSongsByListensController);
 router.get("/genres/:genreName/top-listens", getTopSongsByGenreController);
-router.get("/:songId", getSongByIdController);
 router.get("/", getSongsController);
 
 export default router;

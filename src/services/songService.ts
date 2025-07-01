@@ -1,27 +1,14 @@
 import { PrismaClient, Song, User } from "@prisma/client";
 import { removeVietnameseTones } from "../utils/removeTone";
 import { getPagination, PaginationParams } from "../utils/pagination";
+import { PaginationResult } from "../utils/paginationResult";
 import { CustomError } from "../utils/customError";
 import { StatusCodes } from "http-status-codes";
+import { makePaginationResult } from "../utils/makePaginationResult";
 
 const prisma = new PrismaClient();
 
-const getSongByIdService = async (id: any): Promise<Song | null> => {
-  try {
-    const song = await prisma.song.findUnique({
-      where: { id },
-      include: {
-        artist: true,
-      },
-    });
-    return song;
-  } catch (error) {
-    console.error("Error fetching song:", error);
-    throw error;
-  }
-};
-
-const getSongsService = async ({ keyword, page, limit }: PaginationParams) => {
+const getSongsService = async ({ keyword, page, limit }: PaginationParams): Promise<PaginationResult<any>> => {
   const { skip, take, currentPage } = getPagination({ page, limit });
 
   const normalized = keyword ? removeVietnameseTones(keyword) : undefined;
@@ -49,13 +36,7 @@ const getSongsService = async ({ keyword, page, limit }: PaginationParams) => {
     prisma.song.count({ where }),
   ]);
 
-  return {
-    songs: data,
-    limit: take,
-    total,
-    totalPages: Math.ceil(total / take),
-    currentPage,
-  };
+  return makePaginationResult(data, total, take, currentPage);
 };
 
 // services/songService.ts
@@ -122,7 +103,7 @@ const getFavoriteSongsService = async ({
   userId,
   page,
   limit,
-}: PaginationParams) => {
+}: PaginationParams): Promise<PaginationResult<any>> => {
   const { skip, take, currentPage } = getPagination({ page, limit });
   const [data, total] = await Promise.all([
     prisma.song.findMany({
@@ -153,20 +134,14 @@ const getFavoriteSongsService = async ({
     }),
   ]);
 
-  return {
-    data,
-    limit: take,
-    total,
-    totalPages: Math.ceil(total / take),
-    currentPage,
-  };
+  return makePaginationResult(data, total, take, currentPage);
 };
 
 const getPlaybackHistoryService = async ({
   userId,
   page,
   limit,
-}: PaginationParams) => {
+}: PaginationParams): Promise<PaginationResult<any>> => {
   const { skip, take, currentPage } = getPagination({ page, limit });
 
   const [data, total] = await Promise.all([
@@ -186,16 +161,10 @@ const getPlaybackHistoryService = async ({
     prisma.playbackHistory.count({ where: { userId } }),
   ]);
 
-  return {
-    data,
-    total,
-    currentPage,
-    totalPages: Math.ceil(total / take),
-    limit: take,
-  };
+  return makePaginationResult(data, total, take, currentPage);
 };
 
-const getTopSongsByListensService = async ({ page, limit }: PaginationParams) => {
+const getTopSongsByListensService = async ({ page, limit }: PaginationParams): Promise<PaginationResult<any>> => {
   const { skip, take, currentPage } = getPagination({ page, limit });
 
   // 1. Lấy tất cả các bản ghi lượt nghe được nhóm theo bài hát để tính tổng số bài hát duy nhất và sau đó phân trang
@@ -219,13 +188,7 @@ const getTopSongsByListensService = async ({ page, limit }: PaginationParams) =>
   const songIds = paginatedSongIdsRaw.map(item => item.songId);
 
   if (songIds.length === 0) {
-    return {
-      data: [],
-      limit: take,
-      total: total,
-      totalPages: totalPages,
-      currentPage: currentPage,
-    };
+    return makePaginationResult([], total, take, currentPage);
   }
 
   // 3. Lấy thông tin chi tiết của các bài hát đã được phân trang
@@ -249,16 +212,10 @@ const getTopSongsByListensService = async ({ page, limit }: PaginationParams) =>
     };
   }).sort((a, b) => b.listenCount - a.listenCount); // Sắp xếp lại để đảm bảo thứ tự chính xác
 
-  return {
-    data,
-    limit: take,
-    total,
-    totalPages: totalPages,
-    currentPage,
-  };
+  return makePaginationResult(data, total, take, currentPage);
 };
 
-const getTopSongsByGenreService = async ({ genre, page, limit }: { genre: string, page?: number, limit?: number }) => {
+const getTopSongsByGenreService = async ({ genre, page, limit }: { genre: string, page?: number, limit?: number }): Promise<PaginationResult<any>> => {
   const { skip, take, currentPage } = getPagination({ page, limit });
 
   // 1. Lấy tất cả các bản ghi lượt nghe được nhóm theo bài hát và thể loại để tính tổng số lượt nghe theo từng bài hát
@@ -299,29 +256,9 @@ const getTopSongsByGenreService = async ({ genre, page, limit }: { genre: string
   // 4. Áp dụng phân trang
   const data = sortedSongs.slice(skip, skip + take);
 
-  return {
-    data,
-    limit: take,
-    total,
-    totalPages,
-    currentPage,
-  };
+  return makePaginationResult(data, total, take, currentPage);
 };
 
-// const getAllGenresService = async () => {
-//   const genres = await prisma.song.findMany({
-//     distinct: ['genre'],
-//     select: {
-//       genre: true,
-//     },
-//   });
-//   // Chuyển đổi kết quả thành một mảng các chuỗi genre
-//   return genres.map(item => item.genre);
-// };
-
-// const getTopGenresByListensService = async ({ page, limit }: PaginationParams) => {
-// ... existing code ...
-// };
 
 const playSongService = async (userId: number, songId: number) => {
   const song = await prisma.song.findUnique({ where: { id: songId } });
@@ -359,13 +296,13 @@ const playSongService = async (userId: number, songId: number) => {
 };
 
 const deleteOldPlaybackHistory = async () => {
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const result = await prisma.playbackHistory.deleteMany({
     where: {
       playedAt: {
-        lt: threeDaysAgo,
+        lt: sevenDaysAgo,
       },
     },
   });
@@ -374,9 +311,9 @@ const deleteOldPlaybackHistory = async () => {
   return result.count;
 };
 
+
 export {
   getSongsService,
-  getSongByIdService,
   addFavoriteSongService,
   deleteFavoriteSongService,
   getFavoriteSongsService,
