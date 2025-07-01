@@ -21,8 +21,11 @@ const createPlaylistService = async (
     });
     return newPlaylist;
   } catch (error: any) {
-    if (error.code === 'P2002' && error.meta?.target?.includes('userId_name')) {
-      throw new CustomError(StatusCodes.CONFLICT, "Playlist with this name already exists for this user.");
+    if (error.code === "P2002" && error.meta?.target?.includes("userId_name")) {
+      throw new CustomError(
+        StatusCodes.CONFLICT,
+        "Playlist with this name already exists for this user."
+      );
     }
     console.error("Error creating playlist:", error);
     throw error;
@@ -41,7 +44,10 @@ const updatePlaylistNameService = async (
     });
 
     if (!playlistToUpdate) {
-      throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
+      throw new CustomError(
+        StatusCodes.NOT_FOUND,
+        "Playlist not found or unauthorized"
+      );
     }
 
     // Cập nhật tên playlist
@@ -51,8 +57,11 @@ const updatePlaylistNameService = async (
     });
     return updatedPlaylist;
   } catch (error: any) {
-    if (error.code === 'P2002' && error.meta?.target?.includes('userId_name')) {
-      throw new CustomError(StatusCodes.CONFLICT, "Playlist with this name already exists for this user.");
+    if (error.code === "P2002" && error.meta?.target?.includes("userId_name")) {
+      throw new CustomError(
+        StatusCodes.CONFLICT,
+        "Playlist with this name already exists for this user."
+      );
     }
     console.error("Error updating playlist name:", error);
     throw error;
@@ -72,7 +81,10 @@ const deletePlaylistService = async (
   });
 
   if (!playlist) {
-    throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
+    throw new CustomError(
+      StatusCodes.NOT_FOUND,
+      "Playlist not found or unauthorized"
+    );
   }
 
   // Xoá playlist dựa trên id
@@ -95,19 +107,21 @@ const addSongToPlaylistService = async (
 
   if (!playlistToAdd) {
     // Không tìm thấy playlist hoặc không phải của user
-    throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
+    throw new CustomError(
+      StatusCodes.NOT_FOUND,
+      "Playlist not found or unauthorized"
+    );
   }
   console.log("----------------------------------", typeof songId);
   console.log("----------------------------------", songId);
   // Chuyển đổi songId thành số nguyên
-  const songIdInt = songId;
 
   // Kiểm tra xem bài hát đã tồn tại trong playlist chưa
   const exists = await prisma.playlistSong.findUnique({
     where: {
       playlistId_songId: {
         playlistId,
-        songId: songIdInt,
+        songId,
       },
     },
   });
@@ -120,7 +134,7 @@ const addSongToPlaylistService = async (
   const addedSong = await prisma.playlistSong.create({
     data: {
       playlistId,
-      songId: songIdInt,
+      songId,
     },
   });
 
@@ -140,7 +154,10 @@ const deleteSongToPlaylistService = async (
 
   if (!playlistToDelete) {
     // Không tìm thấy playlist hoặc không phải của user
-    throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
+    throw new CustomError(
+      StatusCodes.NOT_FOUND,
+      "Playlist not found or unauthorized"
+    );
   }
 
   // Chuyển đổi songId thành số nguyên
@@ -157,7 +174,10 @@ const deleteSongToPlaylistService = async (
   });
 
   if (!exists) {
-    throw new CustomError(StatusCodes.NOT_FOUND, "Song doesn't exist in playlist");
+    throw new CustomError(
+      StatusCodes.NOT_FOUND,
+      "Song doesn't exist in playlist"
+    );
   }
 
   // Xoá bài hát khỏi playlist
@@ -202,7 +222,10 @@ const getSongsPlaylistService = async ({
   });
 
   if (!playlist) {
-    throw new CustomError(StatusCodes.NOT_FOUND, "Playlist not found or unauthorized");
+    throw new CustomError(
+      StatusCodes.NOT_FOUND,
+      "Playlist not found or unauthorized"
+    );
   }
 
   const { skip, take, currentPage } = getPagination({ page, limit });
