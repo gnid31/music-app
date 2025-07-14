@@ -4,6 +4,6 @@ export class CustomError extends Error {
   constructor(statusCode: number, message: string) {
     super(message);
     this.statusCode = statusCode;
-    Object.setPrototypeOf(this, CustomError.prototype);
+    Object.setPrototypeOf(this, CustomError.prototype); //Đảm bảo prototype của CustomError trỏ vào CustomError
   }
 } 

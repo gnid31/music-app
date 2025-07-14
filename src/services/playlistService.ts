@@ -112,8 +112,7 @@ const addSongToPlaylistService = async (
       "Playlist not found or unauthorized"
     );
   }
-  console.log("----------------------------------", typeof songId);
-  console.log("----------------------------------", songId);
+
   // Chuyển đổi songId thành số nguyên
 
   // Kiểm tra xem bài hát đã tồn tại trong playlist chưa

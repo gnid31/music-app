@@ -15,7 +15,6 @@ RUN npm install
 # Copy toàn bộ mã nguồn còn lại vào thư mục làm việc
 COPY . .
 
-RUN npx prisma generate
 # Nếu bạn sử dụng TypeScript hoặc cần bước build khác, hãy thêm vào đây.
 # Giả sử script build của bạn là "npm run build" và output ra thư mục "dist".
 RUN npm run build
